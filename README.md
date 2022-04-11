@@ -8,6 +8,7 @@
 1. python版本>=`3.10.1`（未在其它版本测过）
 2. solidity静态扫描工具slither， `pip install slither`
 3. 与目标sol文件匹配的solidity编译器，可以使用 `solc-select` 进行管理， `pip install solc-select`
+4. 画图库graphviz，`pip install graphviz`
 
 ## 运行
 在项目根目录运行 `python main.py`  
