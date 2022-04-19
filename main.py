@@ -4,8 +4,8 @@ from slither import Slither
 from slither.core.declarations import Contract
 import sys
 sys.path.append('.')
-from core.call_graph import CallGraph, View
-from core.external_call import ExternalCall
+from core.analyze.call_graph import CallGraph, View
+from core.analyze.external_call import ExternalCall
 
 BASE_INFO = 'base-info'
 CALL_GRAPH = 'call-graph'

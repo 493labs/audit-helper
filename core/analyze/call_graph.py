@@ -1,6 +1,6 @@
 from slither.core.declarations import Contract, Function
-from core.base_analyze import BaseAnalyze
-from core.base_graph import TreeGraph, LeafViewWrapper, View
+from core.base.analyze import BaseAnalyze
+from core.base.graph import TreeGraph, LeafViewWrapper, View
 
 
 class CallGraph(BaseAnalyze):
