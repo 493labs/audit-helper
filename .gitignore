@@ -130,4 +130,6 @@ dmypy.json
 
 contracts
 config.ini
+test
 
+*output
