@@ -3,6 +3,7 @@
 ## 当前已实现：
 
 1. 输出合约的调用关系图（所有的外部调用、内部调用和两者之和，以及针对单个方法的调用关系）
+2. 危险的外部调用检查（外部调用的地址基于输入的（可能在其它方法中）参数）
 
 ## 正常运行依赖组件
 1. python版本>=`3.10.1`（未在其它版本测过）
@@ -14,12 +15,19 @@
 在项目根目录运行 `python main.py`  
 程序运行基于配置文件 `config.ini` ，位于 `main.py` 同级目录，内容如下  
 ```ini
-[target]
+[base-info]
 contract_root_path = contracts\teleport ;若有openzeppelin依赖则将@openzeppelin目录放于此处
 contract_path = core\packet\Packet.sol
 contract_name = Packet
+
+[call-graph]
+open = False ;是否执行此模块
 function_names = sendPacket,sendMultiPacket,executePacket,acknowledgePacket,recvPacket
 analyze_global = True ;是否输出全局调用关系图，位于contract_root_path下的output
-analyze_function = False ；;是否输出特定方法的调用关系图，位于contract_root_path下的output
+analyze_function = True ;是否输出特定方法的调用关系图，位于contract_root_path下的output
+
+[external-call]
+open = True ;是否执行此模块
+
 ```
 
