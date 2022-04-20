@@ -130,6 +130,9 @@ dmypy.json
 
 contracts
 config.ini
+task.ini
+conf
 test
 
 *output
+sols

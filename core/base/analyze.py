@@ -33,7 +33,7 @@ class BaseAnalyze:
         
     def _func_to_reachable_internal_funcs(self, f:Function) -> List[Function]:
         '''
-        迭代获取方法可达到的方法列表（内部调用）
+        迭代获取方法可达到的内部调用（不包含自己）
         '''
         if  f not in self.__func_to_reachable_internal_funcs:
             calls = []
@@ -43,6 +43,13 @@ class BaseAnalyze:
                 calls.extend(self._func_to_reachable_internal_funcs(call))            
             self.__func_to_reachable_internal_funcs[f] = list(set(calls))
         return self.__func_to_reachable_internal_funcs[f]
+
+    def _func_to_full_reachable_internal_funcs(self, f:Function) -> List[Function]:
+        '''
+        迭代获取方法可达到的内部调用（包含自己）
+        '''
+        return [f] + self._func_to_reachable_internal_funcs(f)
+        
 
     def _func_to_external_funcs(self, f:Function) -> List[Tuple[str, Function]]:
         ''' 

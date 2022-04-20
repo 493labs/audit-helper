@@ -1,4 +1,3 @@
-from mimetypes import init
 from typing import List, Mapping, Tuple
 from slither.core.declarations import Function
 import graphviz as gv
