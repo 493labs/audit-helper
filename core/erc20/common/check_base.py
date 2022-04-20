@@ -28,7 +28,7 @@ class BaseCheck(BaseAnalyze):
         """
         f = self.c.get_function_from_signature(e_view.sign)
         if f:
-            assert len(f.state_variables_read) == 1, 'the {} function does not read any state'.format(e_view.name)
+            assert len(f.state_variables_read) == 1, 'the {} function read {} state'.format(e_view.name, len(f.state_variables_read))
             return f.state_variables_read[0]
         else:
             for s in self.c.state_variables:
