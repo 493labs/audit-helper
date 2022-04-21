@@ -7,7 +7,7 @@
 
 ## 依赖
 1. python版本>=`3.10.1`（未在其它版本测过）
-2. 安装依赖 `pip install -r requirements.txt`, 可以选择性的安装虚拟环境
+2.安装依赖 `pip install -r requirements.txt`, 可以选择性的安装虚拟环境, 使用的时候建议使用虚拟环境
 
 ## erc20检查
 1. 转账与授权逻辑检查
