@@ -1,5 +1,6 @@
-from typing import List, Mapping, Tuple
+from typing import List, Mapping, Tuple, Optional
 from slither.core.declarations import Function
+from slither.core.variables.state_variable import StateVariable
 import graphviz as gv
 from enum import Enum,unique
 
@@ -23,7 +24,7 @@ class LeafViewWrapper:
         用于统一处理重名情况
         '''
         # 非函数情况直接返回其字符串
-        if  not isinstance(f, Function):
+        if  not isinstance(f, Function|StateVariable):
             return str(f)
         if f not in self.__fname_prefix_count:
             if f.name not in self.__name_count:
@@ -32,83 +33,58 @@ class LeafViewWrapper:
             self.__name_count[f.name] += 1
         return '.' * self.__fname_prefix_count[f] + f.name
 
-class ClusterNode:
-    def __init__(self, tag: str, fnames: List[str], child_nodes: List) -> None:
-        self.tag = tag
-        self.fnames = fnames
-        self.child_nodes = child_nodes
-        # self.leaf_view = leaf_view
+class ClusterDiGraph(gv.Digraph):
+    def __init__(self, name: Optional[str] = None, is_root:bool=True) -> None:
+        super().__init__(name, strict=is_root)
+        if is_root:
+            self.attr(fontsize='30', ranksep='2')
+        self.__cluster_digraph: Mapping[str, gv.Digraph] = {}
+        self.__dup_edge_record: Mapping[str, str] = {}
     
-    def get_child(self,cluster_tag:str):
-        for child in self.child_nodes:
-            if child.tag == cluster_tag:
-                return child
-        return None
 
-    def extend_fnames(self, fnames: List[str]):
-        self.fnames.extend(fnames)
+    def get_cluster_digraph_with_set_if_none(self, cluster_tag:str)->gv.Digraph: 
+        if cluster_tag not in self.__cluster_digraph:
+            cluster_dot = ClusterDiGraph('cluster_'+cluster_tag, is_root=False)   
+            cluster_dot.attr(
+                label = cluster_tag,
+                fontsize = '25',
+                style = 'filled'
+            )
+            cluster_dot.attr('node',
+                shape = 'box',
+                fontsize = '20'
+            )
+            self.__cluster_digraph[cluster_tag] = cluster_dot
+        return self.__cluster_digraph[cluster_tag]
+    def loop_get_cluster_digraph_with_set_if_none(self, cluster_path: List[str])->gv.Digraph:
+        cur_graph = self       
+        for cluster_tag in cluster_path: 
+            cur_graph = cur_graph.get_cluster_digraph_with_set_if_none(cluster_tag)
+        return cur_graph
 
-    def append_fname(self, fname:str):
-        self.fnames.append(fname)
+    def add_cluster_node(self, cluster_path: List[str], name: str) -> None:
+        self.loop_get_cluster_digraph_with_set_if_none(cluster_path).node(name)
 
-    def extend_childs(self, childs: List):
-        self.child_nodes.extend(childs)
-
-    def append_child(self, child):
-        self.child_nodes.append(child)
-
-    def generate_dot(self, as_root:bool) -> gv.Digraph:
-        if as_root:
-            dot = gv.Digraph(name= self.tag,strict=True, graph_attr={
-                'fontsize': '30',
-                'ranksep': '2'
-            }) 
+    def add_edge(self, tail:str, head:str, label:str):
+        '''
+        多次调用时，将序号汇合在一起
+        '''
+        key = f'{tail}->{head}'
+        if key not in self.__dup_edge_record:
+            self.__dup_edge_record[key] = label            
         else:
-            dot = gv.Digraph(name='cluster_'+self.tag,graph_attr={
-                'label': self.tag,
-                'fontsize': '25',
-                'style': 'filled'
-            },node_attr={
-                'shape':'box',
-                'fontsize': '20'
-            })
+            self.__dup_edge_record[key] = f'{self.__dup_edge_record[key]}\n{label}'
+        self.edge(tail, head, self.__dup_edge_record[key])
 
-        for fname in self.fnames:
-            dot.node(fname)
-        for node in self.child_nodes:
-            node: ClusterNode = node
-            dot.subgraph(node.generate_dot(as_root=False))
-        return dot
+        
+    def gene_cluster_node(self):
+        for cluster_dot in self.__cluster_digraph.values():
+            cluster_dot.gene_cluster_node()
+            self.subgraph(cluster_dot)
 
-class TreeGraph:
-    def __init__(self) -> None:        
-        self.root: ClusterNode = ClusterNode('root',[],[])
-        self.edges: List[Tuple[str,str]] = []
-
-    def reset(self):
-        self.root: ClusterNode = ClusterNode('root',[],[])
-        self.edges: List[Tuple[str,str]] = []
-
-    def add_edge(self, edge: Tuple[str,str]):
-        self.edges.append(edge)
-    def add_edges(self, edges: List[Tuple[str,str]]):
-        self.edges.extend(edges)
-    
-    def __get_cluster(self,cluster_path:List[str])->ClusterNode:
-        cur_node = self.root
-        for cluster_tag in cluster_path:
-            next_node:ClusterNode = cur_node.get_child(cluster_tag)
-            if not next_node:
-                next_node = ClusterNode(cluster_tag,[],[])
-                cur_node.append_child(next_node)
-            cur_node = next_node
-        return cur_node
-    def add_node(self,cluster_path:List[str],fname:str):
-        self.__get_cluster(cluster_path).append_fname(fname)
-    def add_nodes(self,cluster_path:List[str],fnames:List[str]):
-        self.__get_cluster(cluster_path).extend_fnames(fnames)
-
-    def generate_dot(self)->gv.Digraph:
-        dot = self.root.generate_dot(as_root=True)
-        dot.edges(self.edges)
-        return dot
+    def gene_fix_node(self, nodes:List[str], rank:str = 'max'):
+        fix_dot = gv.Digraph()
+        fix_dot.attr(rank=rank)
+        for node in nodes:
+            fix_dot.node(node)
+        self.subgraph(fix_dot)

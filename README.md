@@ -50,6 +50,8 @@ function_names = sendPacket,sendMultiPacket,executePacket,acknowledgePacket,recv
 global_call_graph = True
 ; 是否输出特定方法的调用关系图，位于`root_path`下的`output`
 function_call_graph = True
+; 是否输出合约的状态变量以及方法对其读写情况的关系图
+write_read_graph = False
 
 ; 是否分析危险的外部调用
 with_external_call_check = False

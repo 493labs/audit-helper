@@ -30,6 +30,19 @@ class BaseAnalyze:
                 calls.append(ff)
             self.__func_to_internal_funcs[f] = calls
         return self.__func_to_internal_funcs[f]
+
+    def _func_to_ordered_internal_funcs(self, f:Function) -> List[Function]:
+        '''
+        获取方法的内部调用(按调用顺序排序)
+        '''
+        if f not in self.__func_to_internal_funcs:
+            calls = []
+            # 去除构造函数的情况
+            calls.extend([ff for ff in f.modifiers if isinstance(ff, Function)])
+            for node in f.nodes:
+                calls.extend([ff for ff in node.internal_calls if ff not in node.solidity_calls])
+            self.__func_to_internal_funcs[f] = calls
+        return self.__func_to_internal_funcs[f]
         
     def _func_to_reachable_internal_funcs(self, f:Function) -> List[Function]:
         '''

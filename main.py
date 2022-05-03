@@ -25,6 +25,8 @@ def call_graph(config:ConfigParser, c:Contract):
         for fname in config.get(AUDIT_HELPER, 'function_names').split(','):
             fname = fname.strip()
             analyze.generate_graph(View.All_Call, True, fname)
+    if config.getboolean(AUDIT_HELPER, 'write_read_graph'):
+        analyze.gene_wt_graph()
 
 def external_call(config:ConfigParser, c:Contract):
     ex_call_analyze = ExternalCall(c)
