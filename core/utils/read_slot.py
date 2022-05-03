@@ -9,6 +9,10 @@ class ReadSlot:
         self.w3 = Web3(Web3.HTTPProvider(chain.url))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
+    def read_slot(self, contract_addr:str, slot) -> HexBytes:
+        hex_bytes = self.w3.eth.get_storage_at(self.w3.toChecksumAddress(contract_addr), slot)
+        return hex_bytes
+
     def read_mapping_value(self, contract_addr: str, key, point) -> HexBytes:
         '''
         key为 {'s':obj}、{'bs':obj}、{'addrStr':obj}、{'v':obj} 中的一种， 分别对应solidity中的string、bytes、address和值类型 

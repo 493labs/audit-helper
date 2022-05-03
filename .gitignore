@@ -133,6 +133,7 @@ config.ini
 task.ini
 conf
 test
+test.py
 
 *output
 sols

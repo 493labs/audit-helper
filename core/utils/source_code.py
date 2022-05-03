@@ -13,11 +13,13 @@ class SourceCode:
         self.addr = addr
         self.token_name = token_name
         self.code_path = 'sols/erc/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+        self.conf_path = self.code_path + './check.ini'
 
     def download(self):
-        if os.path.exists(self.code_path):
+        if os.path.exists(self.conf_path):
             return
-        os.makedirs(self.code_path)
+        if not os.path.exists(self.code_path):
+            os.makedirs(self.code_path)
 
         assert self.chain.code_url != "", "the code_url of {} is not set".format(self.chain.name)
         ret = requests.get(self.chain.code_url, {
@@ -59,7 +61,7 @@ class SourceCode:
             with open(self.code_path+'/'+contract_file_name, 'w') as fp:
                 fp.write(raw_source_info + "\n\n")
 
-        with open(self.code_path + '/check.ini', 'w') as fp:
+        with open(self.conf_path, 'w') as fp:
             conf.write(fp)
             
 
