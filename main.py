@@ -8,6 +8,7 @@ from core.analyze.call_graph import CallGraph, View
 from core.analyze.external_call import ExternalCall
 from core.utils.e import Chain
 from core.utils.source_code import SourceCode
+from core.utils.change_solc_version import change_solc_version
 import core.erc20.check_entry as check_entry
 
 AUDIT_HELPER = 'audit-helper'
@@ -38,6 +39,7 @@ def audit_helper(config:ConfigParser):
     contract_name = config.get(AUDIT_HELPER, 'contract_name')   
 
     os.chdir(root_path)
+    change_solc_version(contract_path)
     sli = Slither(contract_path)
     cs = sli.get_contract_from_name(contract_name)
     assert len(cs) == 1
@@ -56,7 +58,9 @@ def _check_erc20(code_path:str):
     erc20_conf = ConfigParser()
     erc20_conf.read(check_conf_path, 'utf-8')
     os.chdir(code_path)
-    sli = Slither(erc20_conf.get('info', 'contract_path'))
+    contract_path = erc20_conf.get('info', 'contract_path')
+    change_solc_version(contract_path)
+    sli = Slither(contract_path)
     for c in sli.contracts_derived:
         if c.kind!="contract":
             continue
