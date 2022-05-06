@@ -1,3 +1,4 @@
 graphviz==0.20
-slither==0.3.0
+slither-analyzer==0.8.3
 solc-select==0.2.1
+requests==2.27.1
