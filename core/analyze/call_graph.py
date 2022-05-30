@@ -47,7 +47,7 @@ class CallGraph(BaseAnalyze):
 
         cur_internal_calls = self._func_to_ordered_internal_funcs(f)
         for i in range(len(cur_internal_calls)):
-            self.__for_call(cur_internal_calls[i],view, open_state, open_sequece, depths + [i])
+            self.__for_call(cur_internal_calls[i][0],view, open_state, open_sequece, depths + [i])
 
         if open_state:
             # library call  也可以改变状态，待完善
@@ -66,27 +66,27 @@ class CallGraph(BaseAnalyze):
                     self.fixed_node.append(state_name)
 
         for i in range(len(cur_internal_calls)):
-            call = cur_internal_calls[i]
+            call = cur_internal_calls[i][0]
             if view in [View.In_Call, View.All_Call] or len(self._func_to_external_funcs(call)) > 0:
                 if call.name == '_msgSender':
                     continue
                 call_name = self.leaf_view.generate_view_fname(call)
                 self.cluster_graph.add_cluster_node([call.contract_declarer.name], call_name)
                 if open_sequece:
-                    self.cluster_graph.add_edge(fname, call_name, f'{".".join(map(lambda j:str(j),depths+[i]))}')
+                    self.cluster_graph.add_edge(fname, call_name, '#'+cur_internal_calls[i][1].split('#')[1])
                 else:
                     self.cluster_graph.edge(fname, call_name)
                 
                 
         if view in [View.Ex_Call, View.All_Call]:
-            cur_external_calls = self._func_to_external_funcs(f)
+            cur_external_calls = self._func_to_external_funcs(f, skip_dup = False)
             for i in range(len(cur_external_calls)):
                 call_tuple = cur_external_calls[i]
 
                 call_name = self.leaf_view.generate_view_fname(call_tuple[1])
                 self.cluster_graph.add_cluster_node(['out_call', call_tuple[0]], call_name)
                 if open_sequece:
-                    self.cluster_graph.add_edge(fname, call_name, f'ex.{i}')
+                    self.cluster_graph.add_edge(fname, call_name, '#'+call_tuple[2].split('#')[1])
                 else:
                     self.cluster_graph.edge(fname, call_name)
 
@@ -99,14 +99,14 @@ class CallGraph(BaseAnalyze):
                 continue
             for s in f.all_state_variables_written():
                 if s in f.all_state_variables_read():
-                    self.cluster_graph.edge(f.name, s.name, dir = 'both')
+                    self.cluster_graph.edge(f.name, s.name, color='orange', dir = 'both')
                 else:
-                    self.cluster_graph.edge(f.name,s.name)
+                    self.cluster_graph.edge(f.name,s.name, color='red')
             for s in f.all_state_variables_read():                
                 if s.is_constant or s.is_immutable:
                     continue
                 if s not in f.all_state_variables_written():
-                    self.cluster_graph.edge(s.name, f.name)
+                    self.cluster_graph.edge(s.name, f.name, color = 'green')
 
         self.cluster_graph.attr('graph',rankdir='LR')
         # self.cluster_graph.gene_fix_node(['transfer','transferFrom'],'min')

@@ -67,12 +67,12 @@ class ClusterDiGraph(gv.Digraph):
 
     def add_edge(self, tail:str, head:str, label:str):
         '''
-        多次调用时，将序号汇合在一起
+        多次调用时，将信息汇合在一起
         '''
         key = f'{tail}->{head}'
         if key not in self.__dup_edge_record:
             self.__dup_edge_record[key] = label            
-        else:
+        elif label not in self.__dup_edge_record[key]:
             self.__dup_edge_record[key] = f'{self.__dup_edge_record[key]}\n{label}'
         self.edge(tail, head, self.__dup_edge_record[key])
 
