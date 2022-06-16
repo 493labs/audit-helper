@@ -65,9 +65,5 @@ token_name = SFUND
 ; 下载完成后是否进行`erc20`的各项检查
 with_erc20_check = True
 
-[erc20-check]
-open = True
-code_path = sols/erc/SFUND_bsc_e6045d12
-
 ```
 

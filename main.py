@@ -95,6 +95,3 @@ if __name__ == "__main__":
     if config.has_section(DOWNLOAD) and config.getboolean(DOWNLOAD, OPEN):
         download(config)
     
-    if config.has_section(ERC20_CHECK) and config.getboolean(ERC20_CHECK, OPEN):
-        erc20_check(config)
-
