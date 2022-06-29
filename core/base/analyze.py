@@ -84,7 +84,9 @@ class BaseAnalyze:
                         else:
                             calls.append((str(ir.destination.type.type),ir.function,node.source_mapping_str))
                     if isinstance(ir, LowLevelCall):
-                        calls.append(('low level call',ir.function_name,node.source_mapping_str))            
+                        calls.append(('low level call',ir.function_name,node.source_mapping_str)) 
+                    if isinstance(ir, LibraryCall) and str(ir.destination)=='SafeERC20':
+                        calls.append((str(ir.destination), ir.function_name, node.source_mapping_str))
             self.__func_to_external_funcs[f] = self.__dup_external_calls(calls)  if skip_dup else  calls        
         return self.__func_to_external_funcs[f]
 
