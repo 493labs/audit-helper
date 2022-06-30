@@ -2,17 +2,17 @@ from configparser import ConfigParser
 import json
 import os
 import requests
-from .e import Chain
+from .e import Chain, TokenType
 
 INFO = 'info'
 
 class SourceCode:
 
-    def __init__(self, chain: Chain, addr: str, token_name: str) -> None:
+    def __init__(self, chain: Chain, addr: str, token_type: TokenType, token_name: str) -> None:
         self.chain = chain
         self.addr = addr
         self.token_name = token_name
-        self.code_path = 'sols/erc/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+        self.code_path = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
         self.conf_path = self.code_path + './check.ini'
 
     def download(self):
@@ -54,14 +54,14 @@ class SourceCode:
                 if not os.path.exists(temp_dir_path):
                     os.makedirs(temp_dir_path)
                     
-                with open(full_file_name, 'w') as fp:
+                with open(full_file_name, 'w', encoding='utf-8') as fp:
                     fp.write(source_info['content'] + "\n\n")
         else:
             conf.set(INFO, 'contract_path', contract_file_name)
-            with open(self.code_path+'/'+contract_file_name, 'w') as fp:
+            with open(self.code_path+'/'+contract_file_name, 'w', encoding='utf-8') as fp:
                 fp.write(raw_source_info + "\n\n")
 
-        with open(self.conf_path, 'w') as fp:
+        with open(self.conf_path, 'w', encoding='utf-8') as fp:
             conf.write(fp)
             
 

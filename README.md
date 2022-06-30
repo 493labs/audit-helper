@@ -62,8 +62,9 @@ open = False
 chain_id = 56 
 token_address = 0x477bc8d23c634c154061869478bce96be6045d12
 token_name = SFUND
+; 包括erc20、erc721、other，分别为1、2、99。用于区分下载目录
+token_type = 1
 ; 下载完成后是否进行`erc20`的各项检查
 with_erc20_check = True
-
 ```
 

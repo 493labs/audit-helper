@@ -6,7 +6,7 @@ import sys
 sys.path.append('.')
 from core.analyze.call_graph import CallGraph, View
 from core.analyze.external_call import ExternalCall
-from core.utils.e import Chain
+from core.utils.e import Chain, TokenType
 from core.utils.source_code import SourceCode
 from core.utils.change_solc_version import change_solc_version
 import core.erc20.check_entry as check_entry
@@ -76,7 +76,15 @@ def download(config: ConfigParser):
     
     token_address = config.get(DOWNLOAD,'token_address')
     token_name = config.get(DOWNLOAD,'token_name')
-    source_code = SourceCode(chain, token_address, token_name)
+    token_type_id = config.getint(DOWNLOAD, 'token_type')
+    for e in TokenType._member_map_.values():
+        if token_type_id == e.value:
+            token_type = e
+            break
+    if 'token_type' not in locals():
+        token_type = TokenType.OTHER
+
+    source_code = SourceCode(chain, token_address, token_type, token_name)
     source_code.download()
     if config.getboolean(DOWNLOAD, 'with_erc20_check'):        
         _check_erc20(source_code.get_code_path())
