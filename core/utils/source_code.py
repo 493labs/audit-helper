@@ -27,7 +27,7 @@ class SourceCode:
             "action": "getsourcecode",
             "address": self.addr,
             "apiKey": ""
-        })
+        })        
         raw_contract_info = ret.json()['result'][0]
         raw_source_info: str = raw_contract_info['SourceCode']
         contract_file_name: str = raw_contract_info['ContractName'] + '.sol'
@@ -54,16 +54,18 @@ class SourceCode:
                 if not os.path.exists(temp_dir_path):
                     os.makedirs(temp_dir_path)
                     
-                with open(full_file_name, 'w', encoding='utf-8') as fp:
-                    fp.write(source_info['content'] + "\n\n")
+                self.write_sol(full_file_name, source_info['content'])
         else:
             conf.set(INFO, 'contract_path', contract_file_name)
-            with open(self.code_path+'/'+contract_file_name, 'w', encoding='utf-8') as fp:
-                fp.write(raw_source_info + "\n\n")
+            self.write_sol(self.code_path+'/'+contract_file_name, raw_source_info)
 
         with open(self.conf_path, 'w', encoding='utf-8') as fp:
             conf.write(fp)
-            
 
+    def write_sol(self, file_path:str, content:str):
+        with open(file_path,'w',encoding='utf-8') as fp:
+            # replace用于处理苹果系统上编辑的sol文件到window上的换两行问题
+            fp.write(content.replace('\r\n','\n') + "\n\n")
+            
     def get_code_path(self) -> str:
         return self.code_path
