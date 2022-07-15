@@ -1,4 +1,6 @@
 import subprocess
+import sys
+from typing import List
 
 def change_solc_version(sol_path:str):
     # 获取已有的solc版本
@@ -31,9 +33,16 @@ def change_solc_version(sol_path:str):
         if line.startswith('0'):
             obj_version = line
         elif line.startswith('^'):
+            def digit(s:str)->List[int]:
+                ss = s.split('.')
+                assert len(ss)==3, f'编译器版本格式有误：{s}'
+                return [int(si) for si in ss]
+
             versions.insert(0,cur_version)
+            demands = digit(line[1:])
             for item in versions:
-                if item.startswith(line[1:5]) and item >= line[1:]:
+                supplys = digit(item)
+                if supplys[0]==demands[0] and supplys[1]==demands[1] and supplys[2]>=demands[2]:
                     obj_version = item
                     break
         else:
@@ -44,5 +53,6 @@ def change_solc_version(sol_path:str):
     # 切换版本
     if  obj_version not in versions or obj_version == '':
         print("未找到合适的solidity版本，需要先安装，")
+        sys.exit()
     elif obj_version != cur_version:
         subprocess.call(f'solc-select use {obj_version}')
