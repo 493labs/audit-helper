@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from slither.core.declarations import Contract, Function, FunctionContract
-from core.base.analyze import BaseAnalyze
-from core.base.graph import LeafViewWrapper, View, ClusterDiGraph
+from .analyze import BaseAnalyze
+from .graph import LeafViewWrapper, View, ClusterDiGraph
 
 
 class CallGraph(BaseAnalyze):

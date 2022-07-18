@@ -4,9 +4,9 @@ from slither import Slither
 from slither.core.declarations import Contract
 import sys
 sys.path.append('.')
-from core.analyze.call_graph import CallGraph, View
-from core.analyze.external_call import ExternalCall
-from core.base.e import Chain, TokenType
+from core.visualize.call_graph import CallGraph, View
+from core.general.external_call import ExternalCall
+from core.common.e import Chain, TokenType
 from core.utils.source_code import SourceCode
 from core.utils.change_solc_version import change_solc_version
 from core.token.check_entry import check_token

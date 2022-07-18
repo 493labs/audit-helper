@@ -2,7 +2,7 @@ from hexbytes import HexBytes
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
-from .e import Chain
+from core.common.e import Chain
 
 class ReadSlot:
     def __init__(self, chain: Chain) -> None:
@@ -12,6 +12,20 @@ class ReadSlot:
     def read_slot(self, contract_addr:str, slot) -> HexBytes:
         hex_bytes = self.w3.eth.get_storage_at(self.w3.toChecksumAddress(contract_addr), slot)
         return hex_bytes
+
+    def read_proxy_impl(self, proxy_addr:str) -> HexBytes:
+        impl_slot = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(proxy_addr), impl_slot)
+
+    def read_proxy_admin(self, proxy_addr:str) -> HexBytes:
+        admin_slot = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
+        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(proxy_addr), admin_slot)
+
+    def read_by_selector(self, contract_addr:str, method:str) -> HexBytes:
+        return self.w3.eth.call({
+            'to': self.w3.toChecksumAddress(contract_addr),
+            'data': self.w3.keccak(text = method)[:4].hex()
+        })
 
     def read_mapping_value(self, contract_addr: str, key, point) -> HexBytes:
         '''
