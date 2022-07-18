@@ -2,7 +2,7 @@ from configparser import ConfigParser
 import json
 import os
 import requests
-from .e import Chain, TokenType
+from core.base.e import Chain, TokenType
 
 INFO = 'info'
 

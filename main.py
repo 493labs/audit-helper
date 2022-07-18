@@ -6,10 +6,10 @@ import sys
 sys.path.append('.')
 from core.analyze.call_graph import CallGraph, View
 from core.analyze.external_call import ExternalCall
-from core.utils.e import Chain, TokenType
+from core.base.e import Chain, TokenType
 from core.utils.source_code import SourceCode
 from core.utils.change_solc_version import change_solc_version
-import core.erc20.check_entry as check_entry
+from core.token.check_entry import check_token
 
 AUDIT_HELPER = 'audit-helper'
 DOWNLOAD = 'download'
@@ -52,19 +52,19 @@ def audit_helper(config:ConfigParser):
         external_call(config, c)
 
 
-def _check_erc20(code_path:str):
+def _check_token(code_path:str):
     check_conf_path = code_path + '/check.ini'
     assert os.path.exists(check_conf_path), '请先下载代码'
-    erc20_conf = ConfigParser()
-    erc20_conf.read(check_conf_path, 'utf-8')
+    token_conf = ConfigParser()
+    token_conf.read(check_conf_path, 'utf-8')
     os.chdir(code_path)
-    contract_path = erc20_conf.get('info', 'contract_path')
+    contract_path = token_conf.get('info', 'contract_path')
     change_solc_version(contract_path)
     sli = Slither(contract_path)
     for c in sli.contracts_derived:
         if c.kind!="contract":
             continue
-        check_entry.check_erc20(c)
+        check_token(c)
 
 def download(config: ConfigParser):
     chain_id = config.getint(DOWNLOAD,'chain_id')
@@ -86,11 +86,11 @@ def download(config: ConfigParser):
 
     source_code = SourceCode(chain, token_address, token_type, token_name)
     source_code.download()
-    if config.getboolean(DOWNLOAD, 'with_erc20_check'):        
-        _check_erc20(source_code.get_code_path())
+    if config.getboolean(DOWNLOAD, 'with_token_check'):        
+        _check_token(source_code.get_code_path())
 
 def erc20_check(config: ConfigParser):
-    _check_erc20(config.get(ERC20_CHECK, 'code_path'))
+    _check_token(config.get(ERC20_CHECK, 'code_path'))
 
 
 if __name__ == "__main__":
