@@ -27,7 +27,10 @@ def erc20_check_overflow(b: Erc20BaseCheck):
     check_overflow(b.func[ERC20_E.approve])
     check_overflow(b.func[ERC20_E.transfer])
     check_overflow(b.func[ERC20_E.transferFrom])
-    check_overflow(b.func[ERC20_E.burn])
-    check_overflow(b.func[ERC20_E.increaseAllowance])
-    check_overflow(b.func[ERC20_E.decreaseAllowance])
+    if ERC20_E.burn in b.func:
+        check_overflow(b.func[ERC20_E.burn])
+    if ERC20_E.increaseAllowance in b.func:
+        check_overflow(b.func[ERC20_E.increaseAllowance])
+    if ERC20_E.decreaseAllowance in b.func:
+        check_overflow(b.func[ERC20_E.decreaseAllowance])
     
