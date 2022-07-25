@@ -19,7 +19,9 @@ class Chain(Enum):
     Eth = "https://mainnet.infura.io/v3/", "http://api.etherscan.io/api", 1
     Bsc = "https://bsc-dataseed.binance.org/", "http://api.bscscan.com/api", 56
     XAVA = "https://api.avax.network/ext/bc/C/rpc/", "http://api.snowtrace.io/api", 43114
-    Polygon = "https://polygon-rpc.com/", "http://api.polygonscan.com/api", 137
+    # Polygon = "https://polygon-rpc.com/", "http://api.polygonscan.com/api", 137
+    Polygon = "https://rpc-mainnet.matic.quiknode.pro", "http://api.polygonscan.com/api", 137
+    
 
 @unique
 class TokenType(Enum):
