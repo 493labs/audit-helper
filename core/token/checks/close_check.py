@@ -51,9 +51,9 @@ def check_asm_s(b: BaseCheck):
     '''
     for f in b.c.functions_entry_points:
         for ir in f.all_slithir_operations():
-            if isinstance(ir, SolidityCall) and ir.function.name == "sload":
-                print(f" {ir.function.name} 使用了 asm 的 sload ，功能未知")
-            if isinstance(ir, SolidityCall) and ir.function.name == "sstore":
-                print(f" {ir.function.name} 使用了 asm 的 sstore ，功能未知")
+            if isinstance(ir, SolidityCall) and ir.function.name.startswith("sload") :
+                print(f" {f.name} 使用了 asm 的 sload ，功能未知")
+            if isinstance(ir, SolidityCall) and ir.function.name.startswith("sstore"):
+                print(f" {f.name} 使用了 asm 的 sstore ，功能未知")
                     
 
