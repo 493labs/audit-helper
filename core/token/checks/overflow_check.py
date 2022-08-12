@@ -13,7 +13,7 @@ def check_overflow(f: Function):
     if f.compilation_unit.solc_version >= "0.8.0":
         return
     
-    for ir in f.all_slithir_operations:
+    for ir in f.all_slithir_operations():
         if isinstance(ir, Binary) and ir.type in[
             BinaryType.ADDITION,
             BinaryType.SUBTRACTION,
