@@ -38,12 +38,27 @@ infura_key = xxxxxxxxxx
 
 
 ## 运行
-在项目根目录运行 `python main.py`  
-程序运行基于配置文件 `task.ini` ，位于 `main.py` 同级目录，内容如下  
+### token检查
+在项目根目录运行 `python ./entry/token_entry.py`  
+程序运行基于配置文件 `token.ini` ，位于 `token_entry.py` 同级目录，内容如下  
+```ini
+[download]
+; 目前支持ETH、BSC、XAVA-C链，分别为1、56、43114
+chain_id = 56 
+token_address = 0x477bc8d23c634c154061869478bce96be6045d12
+; 包括erc20、erc721、other，分别为1、2、99。用于区分下载目录
+token_type = 1
+token_name = SFUND
+; 下载完成后是否进行`token`的各项检查
+with_token_check = True
+```
+
+### audit检查
+在项目根目录运行 `python ./entry/audit_entry.py`  
+程序运行基于配置文件 `audit.ini` ，位于 `audit_entry.py` 同级目录，内容如下  
 ```ini
 [audit-helper]
 ; 每个段都有一个`open`属性，用于控制是否执行此模块
-open = False
 ; 若有`openzeppelin`依赖则将`@openzeppelin`目录放于此处
 root_path = contracts\teleport
 contract_path = core\packet\Packet.sol
@@ -61,16 +76,5 @@ write_read_graph = False
 
 ; 是否分析危险的外部调用
 with_external_call_check = False
-
-[download]
-open = False
-; 目前支持ETH、BSC、XAVA-C链，分别为1、56、43114
-chain_id = 56 
-token_address = 0x477bc8d23c634c154061869478bce96be6045d12
-; 包括erc20、erc721、other，分别为1、2、99。用于区分下载目录
-token_type = 1
-token_name = SFUND
-; 下载完成后是否进行`token`的各项检查
-with_token_check = True
 ```
 
