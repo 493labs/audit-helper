@@ -46,7 +46,7 @@ def change_solc_version(sol_path:str):
                     obj_version = item
                     break
         else:
-            print(f'为考虑这种模式：{line}，可能需要人工设置')
+            print(f'未考虑这种模式：{line}，可能需要人工设置')
             return
     print(f'需要solc版本：{obj_version}')
 
