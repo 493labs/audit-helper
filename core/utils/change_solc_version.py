@@ -4,7 +4,7 @@ from typing import List
 
 def change_solc_version(sol_path:str):
     # 获取已有的solc版本
-    res = subprocess.check_output('solc-select versions')
+    res = subprocess.check_output(['solc-select', 'versions'])
     versions = []
     cur_version = ''
     for item in res.splitlines():
