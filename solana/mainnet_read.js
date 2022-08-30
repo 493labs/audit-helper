@@ -31,5 +31,20 @@ const run = async () => {
     console.log(pda)
     
 }
-run()
+const run2 = async () => {
+    const url = 'http://solana-mainnet.phantom.tech'
+    
+    const conn = new sol_web3.Connection(url)
+    const mint = new sol_web3.PublicKey('9F6UqFvxhZeTF373LzJ92H86EwpTgKRyrR35npf4BSFt')
+
+    const mint_account = await conn.getAccountInfo(mint)
+    console.log('------------mint_account------------')
+    console.log(mint_account)
+
+    const token = new spl_token.Token(conn, mint, spl_token.TOKEN_PROGRAM_ID, mint)
+    const mint_info = await token.getMintInfo()
+    console.log('------------mint_info------------')
+    console.log(mint_info)    
+}
+run2()
 
