@@ -3,21 +3,20 @@ import json
 import os
 import requests
 from core.common.e import Chain, TokenType
+from core.utils.change_solc_version import change_solc_version
+from slither import Slither
+from slither.core.declarations import Contract
 
 class SourceCode:
-
-    def __init__(self, chain: Chain, addr: str, token_type: TokenType, token_name: str) -> None:
+    def __init__(self, chain: Chain, addr: str, code_dir: str) -> None:
         self.chain = chain
         self.addr = addr
-        self.token_name = token_name
-        self.code_path = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
-        self.conf_path = self.code_path + './check.ini'
+        self.code_dir = code_dir
+        self.conf_path = code_dir + '/check.ini'
 
     def download(self):
         if os.path.exists(self.conf_path):
-            return
-        if not os.path.exists(self.code_path):
-            os.makedirs(self.code_path)
+            return        
 
         assert self.chain.code_url != "", "the code_url of {} is not set".format(self.chain.name)
         ret = requests.get(self.chain.code_url, {
@@ -25,7 +24,12 @@ class SourceCode:
             "action": "getsourcecode",
             "address": self.addr,
             "apiKey": ""
-        })        
+        })    
+        assert ret['status']=="1", f'链{self.chain}上未找到{self.addr}的代码'
+        # 放在这里避免建立无效目录
+        if not os.path.exists(self.code_dir):
+            os.makedirs(self.code_dir)
+            
         raw_contract_info = ret.json()['result'][0]
         raw_source_info: str = raw_contract_info['SourceCode']
         contract_name: str = raw_contract_info['ContractName']
@@ -35,7 +39,7 @@ class SourceCode:
         conf.add_section('info')
         conf.set('info','chain', self.chain.name)
         conf.set('info','address',self.addr)
-        conf.set('info','code_path',self.code_path)
+        conf.set('info','code_path',self.code_dir)
         conf.set('info','contract_name', contract_name)
 
         if raw_source_info.startswith('{'):
@@ -48,7 +52,7 @@ class SourceCode:
             conf.set('info','contract_path', self.get_file_pos_by_contract_name(mul_source_info,contract_name))
 
             for contract_path, source_info in mul_source_info.items():
-                full_file_name = self.code_path+'/'+contract_path
+                full_file_name = self.code_dir+'/'+contract_path
 
                 temp_dir_path, _ = os.path.split(full_file_name)
                 if not os.path.exists(temp_dir_path):
@@ -57,7 +61,7 @@ class SourceCode:
                 self.write_sol(full_file_name, source_info['content'])
         else:
             conf.set('info', 'contract_path', contract_file_name)
-            self.write_sol(self.code_path+'/'+contract_file_name, raw_source_info)
+            self.write_sol(self.code_dir+'/'+contract_file_name, raw_source_info)
 
         with open(self.conf_path, 'w', encoding='utf-8') as fp:
             conf.write(fp)
@@ -66,6 +70,7 @@ class SourceCode:
         for contract_path in mul_source_info.keys():
             if contract_name in contract_path:
                 return contract_path
+        # 处理文件名与合约名不一致的情况
         for contract_path, source_info in mul_source_info.items():
             source_content:str = source_info['content']
             for line in source_content.splitlines():
@@ -81,6 +86,44 @@ class SourceCode:
         with open(file_path,'w',encoding='utf-8') as fp:
             # replace用于处理苹果系统上编辑的sol文件到window上的换两行问题
             fp.write(content.replace('\r\n','\n') + "\n\n")
-            
-    def get_code_path(self) -> str:
-        return self.code_path
+                 
+
+    def get_sli_c_by_conf(self)->Contract:
+        if not os.path.exists(self.conf_path):
+            self.download()
+        check_conf = ConfigParser()
+        check_conf.read(self.conf_path,'utf-8')
+        contract_path = check_conf.get('info','contract_path')
+        contract_name = check_conf.get('info','contract_name')
+        return self.get_sli_c(contract_path, contract_name)        
+
+    def get_sli_c(self, contract_path:str, contract_name:str)->Contract:
+        raw_dir = os.getcwd()
+        os.chdir(self.code_dir) 
+        change_solc_version(contract_path)
+        sli = Slither(contract_path)
+        os.chdir(raw_dir)        
+        
+        cs = sli.get_contract_from_name(contract_name)
+        assert len(cs) == 1, f'存在重名为{contract_name}的合约'
+        return cs[0]
+
+
+def download(chain: Chain, addr: str, token_type: TokenType, token_name: str):
+    code_dir = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+    source_code = SourceCode(chain, addr, code_dir)
+    source_code.download()
+
+def get_sli_c_by_token_info(chain: Chain, addr: str, token_type: TokenType, token_name: str) -> Contract:
+    code_dir = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+    source_code = SourceCode(chain, addr, code_dir)
+    return source_code.get_sli_c_by_conf()
+
+def get_sli_c_by_addr(chain: Chain, addr: str) -> Contract:
+    code_dir = f'sols/raw/' + '_'.join([chain.name.lower(), addr[-8:].lower()])
+    source_code = SourceCode(chain, addr, code_dir)
+    return source_code.get_sli_c_by_conf()
+
+def get_sli_c(code_dir:str, contract_path:str, contract_name:str) -> Contract:
+    source_code = SourceCode(None, None, code_dir)
+    return source_code.get_sli_c(contract_path, contract_name)

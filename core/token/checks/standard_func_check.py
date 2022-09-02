@@ -3,6 +3,7 @@ from slither.core.declarations import  Function, SolidityVariableComposed
 
 from ..common.check_base import Erc20BaseCheck, Erc721BaseCheck
 from ..common.e import *
+from ..common.output import token_check_output
 
 def func_only_op_state(f: Function, is_write:bool, obj_indexs: List):
     '''
@@ -12,18 +13,10 @@ def func_only_op_state(f: Function, is_write:bool, obj_indexs: List):
 
     for index in indexs:
         if index not in obj_indexs:
-            print(" {} 对 {} 有意料之外的{}".format(
-                f.name,
-                index.name,
-                "写入" if is_write else "读取"
-            ))
+            token_check_output.add_standard_func_check(f" {f.name} 对 {index.name} 有意料之外的{'写入' if is_write else '读取'}")
     for index in obj_indexs:
         if index not in indexs:
-            print(" {} 对 {} 没有应该有的{}".format(
-                f.name,
-                index.name,
-                "写入" if is_write else "读取"
-            ))
+            token_check_output.add_standard_func_check(f" {f.name} 对 {index.name} 没有应该有的{'写入' if is_write else '读取'}")
 
 def func_need_read_msg_sendor(f:Function):
     all_solidity_variables_read = f.all_solidity_variables_read()

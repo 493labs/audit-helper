@@ -8,42 +8,28 @@ from slither.core.declarations import Contract
 
 from .token_identify import identify_token
 from core.common.e import TokenType
+from .common.output import token_check_output
 
 def check_token(c: Contract):
     token_type = identify_token(c)
+    token_check_output.set_token_type(token_type)
     if token_type == TokenType.ERC20:
-        print('It is an erc20 token')
         check_erc20(c)
     elif token_type == TokenType.ERC721:
-        print('It is an erc721 token')
         check_erc721(c)
-    else:
-        print(' the token\'s type is unknown')
 
 def check_erc20(c:Contract):
     b = Erc20BaseCheck(c)
-    print('-----------------check start-----------------')
-    print('--------封闭性检查--------')
     erc20_check_close(b)
     check_asm_s(b)
-    print('--------标准方法读写检查--------')
     erc20_check_standard_func(b)
-    print('--------写重要状态的方法外部调用检查--------')
     erc20_check_external_call(b)
-    print('--------溢出检查--------')
     erc20_check_overflow(b)
-    print('--------假充值检查--------')
     erc20_check_fake_recharge(b)
-    print('-----------------check end-----------------')
 
 def check_erc721(c:Contract):
     b = Erc721BaseCheck(c)
-    print('-----------------check start-----------------')
-    print('--------封闭性检查--------')
-    erc721_check_close(b)
+    erc20_check_close(b)
     check_asm_s(b)
-    print('--------标准方法读写检查--------')
-    erc721_check_standard_func(b)
-    print('--------写重要状态的方法外部调用检查--------')
-    erc721_check_external_call(b)
-    print('-----------------check end-----------------')
+    erc20_check_standard_func(b)
+    erc20_check_external_call(b)

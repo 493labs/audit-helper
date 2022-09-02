@@ -4,6 +4,7 @@ from slither.slithir.variables import Constant
 
 from ..common.check_base import Erc20BaseCheck
 from ..common.e import ERC20_E
+from ..common.output import token_check_output
 
 def _check_fake_recharge(f: Function):
     intercall_irs = []
@@ -15,7 +16,7 @@ def _check_fake_recharge(f: Function):
                 ret_value = ir.values[0]
                 if type(ret_value) == Constant:                    
                     if ret_value == False:
-                        print("存在假充值风险")
+                        token_check_output.add_fake_recharge("存在假充值风险")
                 else:
                     for intercall_ir in intercall_irs:
                         the_ir:InternalCall = intercall_ir

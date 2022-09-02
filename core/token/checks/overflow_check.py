@@ -3,6 +3,7 @@ from slither.core.declarations import Function
 
 from ..common.check_base import Erc20BaseCheck
 from ..common.e import ERC20_E
+from ..common.output import token_check_output
 
 def check_overflow(f: Function):
     '''
@@ -21,7 +22,7 @@ def check_overflow(f: Function):
             BinaryType.POWER
         ]:
             # if isinstance(ir.variable_left,Variable) and isinstance(ir.variable_right,Variable):
-            print(f"  {f.name} : {ir.node.expression} 存在溢出风险")
+            token_check_output.add_overflow_check(f"  {f.name} : {ir.node.expression} 存在溢出风险")
 
 def erc20_check_overflow(b: Erc20BaseCheck):
     check_overflow(b.func[ERC20_E.approve])

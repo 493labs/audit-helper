@@ -4,6 +4,7 @@ from slither.slithir.operations import SolidityCall
 
 from ..common.check_base import BaseCheck, Erc20BaseCheck, Erc721BaseCheck
 from ..common.e import *
+from ..common.output import token_check_output
 
 
 def close_check(b:BaseCheck, allow_es:List, s:StateVariable):
@@ -16,7 +17,7 @@ def close_check(b:BaseCheck, allow_es:List, s:StateVariable):
 
     for f in funcs:
         if f not in allow_funcs:
-            print("未知方法 {} 对 {} 进行了写操作".format(f.name, s.name))
+            token_check_output.add_close_check(f'未知方法 {f.name} 对 {s.name} 进行了写操作')
 
 def erc20_check_close(b:Erc20BaseCheck):
     # balance
@@ -52,8 +53,8 @@ def check_asm_s(b: BaseCheck):
     for f in b.c.functions_entry_points:
         for ir in f.all_slithir_operations():
             if isinstance(ir, SolidityCall) and ir.function.name.startswith("sload") :
-                print(f" {f.name} 使用了 asm 的 sload ，功能未知")
+                token_check_output.add_close_check(f" {f.name} 使用了 asm 的 sload ，功能未知")
             if isinstance(ir, SolidityCall) and ir.function.name.startswith("sstore"):
-                print(f" {f.name} 使用了 asm 的 sstore ，功能未知")
+                token_check_output.add_close_check(f" {f.name} 使用了 asm 的 sstore ，功能未知")
                     
 
