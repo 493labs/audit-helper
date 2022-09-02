@@ -109,13 +109,13 @@ class SourceCode:
         return cs[0]
 
 
-def download(chain: Chain, addr: str, token_type: TokenType, token_name: str):
-    code_dir = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+def download(chain: Chain, addr: str, token_type: str, token_name: str):
+    code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
     source_code = SourceCode(chain, addr, code_dir)
     source_code.download()
 
-def get_sli_c_by_token_info(chain: Chain, addr: str, token_type: TokenType, token_name: str) -> Contract:
-    code_dir = f'sols/{token_type.dir}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+def get_sli_c_by_token_info(chain: Chain, addr: str, token_type: str, token_name: str) -> Contract:
+    code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
     source_code = SourceCode(chain, addr, code_dir)
     return source_code.get_sli_c_by_conf()
 

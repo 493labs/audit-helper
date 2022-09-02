@@ -2,7 +2,7 @@ from configparser import ConfigParser
 import os
 import sys
 sys.path.append('.')
-from core.common.e import Chain, TokenType
+from core.common.e import Chain
 from core.utils.source_code import get_sli_c_by_token_info,download
 from core.token.check_entry import check_token
 from core.token.common.output import token_check_output
@@ -16,13 +16,7 @@ def handle(config: ConfigParser):
     
     token_address = config.get(DOWNLOAD,'token_address')
     token_name = config.get(DOWNLOAD,'token_name')
-    token_type_id = config.getint(DOWNLOAD, 'token_type')
-    for e in TokenType._member_map_.values():
-        if token_type_id == e.value:
-            token_type = e
-            break
-    if 'token_type' not in locals():
-        token_type = TokenType.OTHER
+    token_type = config.get(DOWNLOAD, 'token_type')
 
     if config.getboolean(DOWNLOAD, 'with_token_check'):
         c = get_sli_c_by_token_info(chain, token_address,token_type,token_name)

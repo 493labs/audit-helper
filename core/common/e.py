@@ -18,19 +18,6 @@ class Chain(Enum):
         return obj
     Eth = "https://mainnet.infura.io/v3/", "http://api.etherscan.io/api", 1
     Bsc = "https://bsc-dataseed.binance.org/", "http://api.bscscan.com/api", 56
-    XAVA = "https://api.avax.network/ext/bc/C/rpc/", "http://api.snowtrace.io/api", 43114
-    # Polygon = "https://polygon-rpc.com/", "http://api.polygonscan.com/api", 137
+    XAVA = "https://ava-mainnet.public.blastapi.io/ext/bc/C/rpc", "http://api.snowtrace.io/api", 43114
     Polygon = "https://rpc-mainnet.matic.quiknode.pro", "http://api.polygonscan.com/api", 137
-    
 
-@unique
-class TokenType(Enum):
-    def __new__(cls, dir:str, index:int):
-        obj = object.__new__(cls)
-        
-        obj.dir = dir 
-        obj._value_ = index
-        return obj
-    ERC20 = 'erc20', 1
-    ERC721 = 'erc721', 2
-    OTHER = 'other', 99
