@@ -2,7 +2,7 @@ from configparser import ConfigParser
 import json
 import os
 import requests
-from core.common.e import Chain, TokenType
+from core.common.e import Chain
 from core.utils.change_solc_version import change_solc_version
 from slither import Slither
 from slither.core.declarations import Contract
@@ -25,12 +25,13 @@ class SourceCode:
             "address": self.addr,
             "apiKey": ""
         })    
-        assert ret['status']=="1", f'链{self.chain}上未找到{self.addr}的代码'
+        ret_json = ret.json()
+        assert ret_json['status']=="1", f'链{self.chain}上未找到{self.addr}的代码'
         # 放在这里避免建立无效目录
         if not os.path.exists(self.code_dir):
             os.makedirs(self.code_dir)
             
-        raw_contract_info = ret.json()['result'][0]
+        raw_contract_info = ret_json['result'][0]
         raw_source_info: str = raw_contract_info['SourceCode']
         contract_name: str = raw_contract_info['ContractName']
         contract_file_name: str = contract_name + '.sol'

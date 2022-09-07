@@ -30,7 +30,8 @@ if __name__ == "__main__":
         config.read(os.path.dirname(__file__) + '/token.ini', 'utf-8')      
         handle(config) 
     except Exception as err:
-        print(err.with_traceback())
+        tb = sys.exc_info()[2]
+        print(err.with_traceback(tb))
     else:
         print(token_check_output.get_output())
     

@@ -1,5 +1,4 @@
-from core.common.e import TokenType
-from .common.e import ERC20_E, ERC721_E
+from .common.e import ERC20_E, ERC721_E, TokenType
 
 from slither.core.declarations import Contract
 

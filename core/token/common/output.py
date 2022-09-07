@@ -1,4 +1,5 @@
-from core.common.e import TokenType
+from .e import TokenType
+
 class TokenCheckOutput:
     def __init__(self) -> None:
         self.token_type = TokenType.ERC20

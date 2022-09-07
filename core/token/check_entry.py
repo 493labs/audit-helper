@@ -7,7 +7,7 @@ from .checks.standard_func_check import erc20_check_standard_func, erc721_check_
 from slither.core.declarations import Contract
 
 from .token_identify import identify_token
-from core.common.e import TokenType
+from .common.e import TokenType
 from .common.output import token_check_output
 
 def check_token(c: Contract):

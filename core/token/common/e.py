@@ -54,3 +54,10 @@ class ERC721_E_view(E_view):
     ownerOf = "ownerOf(uint256)", 2
     getApproved = "getApproved(uint256)", 3
     isApprovedForAll = "isApprovedForAll(address,address)", 4
+
+
+@unique
+class TokenType(Enum):
+    ERC20 = 'erc20'
+    ERC721 = 'erc721'
+    OTHER = 'other'
