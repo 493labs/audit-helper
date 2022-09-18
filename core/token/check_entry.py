@@ -29,7 +29,7 @@ def check_erc20(c:Contract):
 
 def check_erc721(c:Contract):
     b = Erc721BaseCheck(c)
-    erc20_check_close(b)
+    erc721_check_close(b)
     check_asm_s(b)
-    erc20_check_standard_func(b)
-    erc20_check_external_call(b)
+    erc721_check_standard_func(b)
+    erc721_check_external_call(b)

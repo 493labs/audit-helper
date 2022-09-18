@@ -4,6 +4,8 @@ from web3.middleware import geth_poa_middleware
 
 from core.common.e import Chain
 
+ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
 class ReadSlot:
     def __init__(self, chain: Chain) -> None:
         self.w3 = Web3(Web3.HTTPProvider(chain.url))

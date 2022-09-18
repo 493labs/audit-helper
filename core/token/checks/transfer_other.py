@@ -5,7 +5,7 @@ from slither.core.cfg.node import Node, NodeType
 
 def get_dominance_frontier(node: Node)-> Node:
     if node.type == NodeType.IFLOOP:
-        # 循环时的边界产生了循环
+        # 循环时的边界指向了循环
         return node.son_false.sons[0]
     elif node.type == NodeType.IF:
         return list(node.dominance_frontier)[0]
@@ -64,7 +64,7 @@ def branch_read_state(node:Node, state:StateVariable)->Tuple[bool,bool]:
 
 
 def func_read_state_in_all_paths(transferFrom_func: Function, approval_state: StateVariable) -> bool:
-    transferFrom_func.nodes_ordered_dominators
+    # transferFrom_func.nodes_ordered_dominators
     return branch_read_state(transferFrom_func.entry_point, approval_state)[0]
 
 def transfer_from_without_approval2(transferFrom_func: Function, approval_state: StateVariable)-> bool:
@@ -90,7 +90,7 @@ def transfer_from_without_approval2(transferFrom_func: Function, approval_state:
                         all_node_without_approval = False
                         break
                     if any(
-                        not isinstance(internal_call,SolidityFunction)  and not transfer_from_without_approval(internal_call)
+                        not isinstance(internal_call,SolidityFunction)  and not transfer_from_without_approval2(internal_call)
                         for internal_call in node.internal_calls
                     ):
                         # 任一调用中含有approval读取（意味着若该调用中含有分支，则需要所有分支都对approval进行读取）

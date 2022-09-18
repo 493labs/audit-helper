@@ -25,13 +25,17 @@ def handle(config: ConfigParser):
         download(chain, token_address,token_type,token_name)
 
 if __name__ == "__main__":
-    try:
-        config = ConfigParser()
-        config.read(os.path.dirname(__file__) + '/token.ini', 'utf-8')      
-        handle(config) 
-    except Exception as err:
-        tb = sys.exc_info()[2]
-        print(err.with_traceback(tb))
-    else:
-        print(token_check_output.get_output())
+    # try:
+    #     config = ConfigParser()
+    #     config.read(os.path.dirname(__file__) + '/token.ini', 'utf-8')      
+    #     handle(config) 
+    # except Exception as err:
+    #     tb = sys.exc_info()[2]
+    #     print(err.with_traceback(tb))
+    # else:
+    #     print(token_check_output.get_output())
+    config = ConfigParser()
+    config.read(os.path.dirname(__file__) + '/token.ini', 'utf-8')      
+    handle(config)
+    print(token_check_output.get_output())
     
