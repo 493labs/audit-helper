@@ -16,9 +16,15 @@ class NodeReturn(Enum):
     branch7 = 7
     branch8 = 8
 
+@unique
+class DecisionScheme(Enum):
+    off_chain = 1
+    on_chain = 2
+
 class DecisionNode(metaclass=ABCMeta): 
     parent = None
     layerouts:List[str] = None
+    is_on_chain: bool = False
     
     def output(self)->List[str]:
         all_layerouts = [] + self.layerouts
@@ -32,9 +38,11 @@ class DecisionNode(metaclass=ABCMeta):
     def check(self, token_info:TokenInfo) -> NodeReturn:
         pass
 
-def generate_node(T:type[DecisionNode], parent:DecisionNode):
+def generate_node(T:type[DecisionNode], parent:DecisionNode, mode:DecisionScheme):
     node = T()
     node.parent = parent
     node.layerouts = []
+    if mode == DecisionScheme.on_chain:
+        node.is_on_chain = True
     return node  
 

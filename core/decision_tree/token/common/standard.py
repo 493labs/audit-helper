@@ -3,6 +3,9 @@ from enum import unique, Enum
 from typing import List, Mapping, Union
 from slither.core.declarations import Contract, Function
 from slither.core.variables.state_variable import StateVariable
+from eth_typing.evm import ChecksumAddress
+
+from core.common.e import Chain
 
 @unique
 class ERC20_E_view(Enum):
@@ -40,6 +43,13 @@ class ERC721_E_Require(Enum):
 
 class TokenInfo:
     c: Contract = None
+    chain: Chain = None
+    address: ChecksumAddress = None
+    proxy_c: Contract = None
+    '''
+    用于代理模式
+    '''
+    
     func_map:Mapping[Enum, Function] = {}
     state_map:Mapping[Enum, StateVariable] = {}
     state_to_funcs_map:Mapping[StateVariable, List[Function]] = {}
