@@ -7,17 +7,19 @@ from .common.standard import TokenInfo
 from .common.base_node import generate_node, NodeReturn, DecisionScheme
 
 from .nodes.token_type import TokenTypeNode
-from .nodes.state import Erc20StateNode
-from .nodes.write_close import CloseCheckNode
+from .nodes.state import Erc20StateNode, Erc721StateNode
+from .nodes.write_close import Erc20CloseCheckNode, Erc721CloseCheckNode
 from .nodes.overflow import OverflowNode
-from .nodes.func_read_write import RequiredFuncNode
+from .nodes.func_read_write import Erc20RequiredFuncNode, Erc721RequiredFuncNode
 
 
 decision_tree = {
-    TokenTypeNode: [Erc20StateNode, TokenTypeNode],
+    TokenTypeNode: [Erc20StateNode, Erc721StateNode, TokenTypeNode],
     Erc20StateNode: [OverflowNode],
-    OverflowNode: [CloseCheckNode],
-    CloseCheckNode: [RequiredFuncNode]
+    OverflowNode: [Erc20CloseCheckNode],
+    Erc20CloseCheckNode: [Erc20RequiredFuncNode],
+    Erc721StateNode: [Erc721CloseCheckNode],
+    Erc721CloseCheckNode: [Erc721RequiredFuncNode]
 }
 
 def make_decision(mode: DecisionScheme, c: Contract, chain: Chain=None, address: ChecksumAddress = None ):
