@@ -7,6 +7,20 @@ from core.utils.change_solc_version import change_solc_version
 from slither import Slither
 from slither.core.declarations import Contract
 
+def get_contract_creation(chain:Chain, contract_address:str):
+    ret = requests.get(chain.code_url, {
+        "module": "contract",
+        "action": "getcontractcreation",
+        "contractaddresses": contract_address,
+        "apiKey": ""
+    })
+    ret_json = ret.json()
+    assert ret_json['status']=="1", f'在链{chain}上未找到{contract_address}的创建合约交易'
+    result = ret_json['result'][0]
+    contractCreator = result['contractCreator']
+    txHash = result['txHash']
+    return contractCreator, txHash
+
 class SourceCode:
     def __init__(self, chain: Chain, addr: str, code_dir: str) -> None:
         self.chain = chain
@@ -70,6 +84,9 @@ class SourceCode:
     def get_file_pos_by_contract_name(self,mul_source_info,contract_name:str)->str:
         for contract_path in mul_source_info.keys():
             if contract_name in contract_path:
+                if contract_path.startswith('/'):
+                    # 有些下载path前面有个'/'，比如 ETH 0x0ca0296387687d670d56214b312b19f082b21923
+                    return contract_path[1:]
                 return contract_path
         # 处理文件名与合约名不一致的情况
         for contract_path, source_info in mul_source_info.items():

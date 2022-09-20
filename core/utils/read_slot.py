@@ -1,6 +1,8 @@
+from typing import List, Tuple
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
+from eth_utils.abi import event_signature_to_log_topic
 
 from core.common.e import Chain
 
@@ -51,3 +53,22 @@ class ReadSlot:
         else:
             assert False, '传入的key的格式不对'
         return self.w3.eth.get_storage_at(checked_addr, pp)
+
+    def _read_role(self, address:str, createBlock:int, role_topic:str)->List[str]:
+        filter_Params = {
+            'topics':[
+                '0x' + event_signature_to_log_topic('RoleGranted(bytes32,address,address)').hex(),
+                role_topic
+            ],    
+            'address':address,
+            'fromBlock': createBlock,
+        }
+        return ['0x'+log['topics'][2][12:32].hex() for log in self.w3.eth.get_logs(filter_Params)]
+    def read_role(self, address:str, createBlock:int, role:str)->List[str]:
+        return self._read_role(address, createBlock, '0x' + event_signature_to_log_topic(role).hex())
+    def read_default_admin_role(self, address:str, createBlock:int)->List[str]:
+        return self._read_role(address, createBlock, '0x0000000000000000000000000000000000000000000000000000000000000000')
+    
+    def read_block_num_by_txhash(self, txhash:str)->Tuple[int, int]:
+        txdata = self.w3.eth.get_transaction(txhash)
+        return txdata['blockNumber'], txdata['transactionIndex']
