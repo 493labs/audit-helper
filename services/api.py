@@ -3,10 +3,10 @@ from flask import request
 from web3 import Web3
 import sys
 sys.path.append('.')
-from core.token.common.output import token_check_output
-from core.utils.source_code import get_sli_c_by_addr
-from core.token.check_entry import check_token
 from core.common.e import Chain
+from core.decision_tree.token.frame import make_decision
+from core.decision_tree.token.common.base_node import DecisionScheme
+
 
 # from flask_restful import Api, Resource
 app = Flask(__name__)
@@ -21,10 +21,9 @@ def getInfo():
         w3 = Web3()
         assert w3.isAddress(addr),f'{addr}不是一个合法地址'
         
-        c = get_sli_c_by_addr(chain, addr)
-        check_token(c)
+        layerouts = make_decision(DecisionScheme.on_chain, chain, addr)
     except Exception as err:
         return f'{err}'
     else:
-        return token_check_output.get_output().replace('\n',' <br>')
+        return layerouts
 

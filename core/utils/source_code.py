@@ -123,7 +123,7 @@ class SourceCode:
         os.chdir(raw_dir)        
         
         cs = sli.get_contract_from_name(contract_name)
-        assert len(cs) == 1, f'存在重名为{contract_name}的合约'
+        assert len(cs) == 1, f'找到 {len(cs)} 个名字为 {contract_name} 的合约'
         return cs[0]
 
 
