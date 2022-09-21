@@ -63,7 +63,7 @@ class ReadSlot:
             'address':address,
             'fromBlock': createBlock,
         }
-        return ['0x'+log['topics'][2][12:32].hex() for log in self.w3.eth.get_logs(filter_Params)]
+        return [log['topics'][2][12:32].hex() for log in self.w3.eth.get_logs(filter_Params)]
     def read_role(self, address:str, createBlock:int, role:str)->List[str]:
         return self._read_role(address, createBlock, '0x' + event_signature_to_log_topic(role).hex())
     def read_default_admin_role(self, address:str, createBlock:int)->List[str]:

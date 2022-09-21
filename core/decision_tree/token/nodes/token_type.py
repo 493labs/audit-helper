@@ -63,6 +63,7 @@ class TokenTypeNode(DecisionNode):
                 self.layerouts.append('进一步分析需要使用链上模式')
                 return NodeReturn.reach_leaf
 
+            self.layerouts.append(f'代理合约地址为 {token_info.address}')
             read_slot = ReadSlot(token_info.chain)
             impl = read_slot.read_proxy_impl(token_info.address)[12:32].hex()
             admin = read_slot.read_proxy_admin(token_info.address)[12:32].hex()

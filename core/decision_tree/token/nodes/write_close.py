@@ -17,8 +17,9 @@ def _check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum]]]) -> Tuple[L
     if len(layerouts) == 0:
         return [f'没有非标准方法对 {state_names} 具有写入操作'], NodeReturn.branch0
     else:
-        layerouts.append(f'暂未对非标准方法写入 {state_names} 的情况进行分析')
-        return layerouts, NodeReturn.reach_leaf
+        return layerouts, NodeReturn.branch0
+        # layerouts.append(f'暂未对非标准方法写入 {state_names} 的情况进行分析')
+        # return layerouts, NodeReturn.reach_leaf
 
 class Erc20CloseCheckNode(DecisionNode):
     def check(self, token_info:TokenInfo) -> NodeReturn:

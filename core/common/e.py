@@ -20,4 +20,6 @@ class Chain(Enum):
     Bsc = "https://bsc-dataseed.binance.org/", "http://api.bscscan.com/api", 56
     XAVA = "https://ava-mainnet.public.blastapi.io/ext/bc/C/rpc", "http://api.snowtrace.io/api", 43114
     Polygon = "https://rpc-mainnet.matic.quiknode.pro", "http://api.polygonscan.com/api", 137
+    # CHZ 无法读取链上slot  https://explorer.chiliz.com/eth-rpc-api-docs
+    CHZ = "https://explorer.chiliz.com/api/eth-rpc", "http://explorer.chiliz.com/api", 999
 
