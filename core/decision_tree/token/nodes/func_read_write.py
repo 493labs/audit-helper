@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Tuple
 from ..common.base_node import DecisionNode, NodeReturn
-from ..common.standard import ERC20_E_view, TokenInfo, ERC20_E_Require, ERC721_E_Require, ERC721_E_view
+from ..common.token import ERC20_E_view, TokenInfo, ERC20_E_Require, ERC721_E_Require, ERC721_E_view
 
 from slither.core.declarations import  Function, SolidityVariableComposed
 from slither.core.variables.state_variable import StateVariable

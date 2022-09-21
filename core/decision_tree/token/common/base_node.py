@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from typing import List
-from .standard import TokenInfo
+from .token import TokenInfo
 
 @unique
 class NodeReturn(Enum):

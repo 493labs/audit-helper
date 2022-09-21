@@ -1,6 +1,6 @@
 from typing import List
 from ..common.base_node import DecisionNode, NodeReturn
-from ..common.standard import ERC20_E_view, ERC721_E_view, TokenInfo
+from ..common.token import ERC20_E_view, ERC721_E_view, TokenInfo
 
 from slither.core.declarations import Function, SolidityFunction
 from slither.slithir.operations import Binary, BinaryType

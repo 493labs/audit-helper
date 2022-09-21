@@ -3,7 +3,7 @@ from slither.core.declarations import Contract
 from eth_typing.evm import ChecksumAddress
 
 from core.common.e import Chain
-from .common.standard import TokenInfo
+from .common.token import TokenInfo
 from .common.base_node import generate_node, NodeReturn, DecisionScheme
 
 from .nodes.token_type import TokenTypeNode
