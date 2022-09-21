@@ -59,7 +59,7 @@ class TokenTypeNode(DecisionNode):
 
         if is_proxy_mode(token_info.c):
             self.layerouts.append('合约为代理合约')
-            if not self.is_on_chain:
+            if not self.on_chain:
                 self.layerouts.append('进一步分析需要使用链上模式')
                 return NodeReturn.reach_leaf
 
