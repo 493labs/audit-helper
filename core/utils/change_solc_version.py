@@ -1,10 +1,16 @@
+import os
 import subprocess
 import sys
 from typing import List
 
 def change_solc_version(sol_path:str):
     # 获取已有的solc版本
-    res = subprocess.check_output('solc-select versions')
+    if os.name == 'nt':
+        res = subprocess.check_output('solc-select versions')
+    elif os.name == 'posix':
+        res = subprocess.check_output('solc-select versions', shell=True)
+    else:
+        assert False, f'未知的操作系统类型 {os.name}'
     versions = []
     cur_version = ''
     for item in res.splitlines():
