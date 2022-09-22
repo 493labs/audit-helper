@@ -60,7 +60,6 @@ class Erc20RequiredFuncNode(DecisionNode):
         
         if len(self.layerouts) == 0:
             self.layerouts.append('标准方法读写集检查无异常')
-            self.layerouts.append('检查完毕，标准的erc20代币')
             return NodeReturn.reach_leaf
         else:
             self.layerouts.append('暂未对读写集异常情况进行分析')
@@ -104,7 +103,7 @@ class Erc721RequiredFuncNode(DecisionNode):
         
         if len(self.layerouts) == 0:
             self.layerouts.append('标准方法读写集检查无异常')
-            self.layerouts.append('检查完毕，标准的erc721代币')
+            # self.layerouts.append('检查完毕，标准的erc721代币')
             return NodeReturn.reach_leaf
         else:
             self.layerouts.append('暂未对读写集异常情况进行分析')

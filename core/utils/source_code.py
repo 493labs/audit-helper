@@ -127,8 +127,11 @@ class SourceCode:
         return cs[0]
 
 
-def download(chain: Chain, addr: str, token_type: str, token_name: str):
-    code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+def download(chain: Chain, addr: str, token_type: str = None, token_name: str = None):
+    if token_type and token_name:
+        code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+    else:
+        code_dir = f'sols/raw/' + '_'.join([chain.name.lower(), addr[-8:].lower()])
     source_code = SourceCode(chain, addr, code_dir)
     source_code.download()
 
