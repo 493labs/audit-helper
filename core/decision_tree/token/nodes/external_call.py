@@ -31,6 +31,8 @@ class ExternalCallNode(DecisionNode):
                     if ir.function.contract_declarer.kind == "library":
                         # library不算外部调用
                         continue
+                    if ir.function_name in ['onERC721Received']:
+                        continue
                     self.add_warn(f"{func.name} 方法中执行了外部调用 {ir.node.expression}")
  
         if len(self.layerouts) == 0:

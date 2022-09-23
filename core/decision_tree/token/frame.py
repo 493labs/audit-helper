@@ -15,6 +15,7 @@ from .nodes.overflow import OverflowNode
 from .nodes.func_read_write import RequiredFuncNode
 from .nodes.transfer_other import TransferOtherNode
 from .nodes.external_call import ExternalCallNode
+from .nodes.back_door import BackDoorNode
 
 
 decision_tree = {
@@ -24,7 +25,8 @@ decision_tree = {
     TransferOtherNode: [CloseCheckNode],    
     Erc721StateNode: [CloseCheckNode],
     CloseCheckNode: [RequiredFuncNode],
-    RequiredFuncNode: [ExternalCallNode]
+    RequiredFuncNode: [ExternalCallNode],
+    ExternalCallNode: [BackDoorNode]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):

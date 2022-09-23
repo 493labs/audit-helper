@@ -4,7 +4,7 @@ from ..common.base_node import DecisionNode, NodeReturn
 from ..common.token import TokenInfo, ERC20_E_Require, ERC721_E_Require
 
 from slither.core.declarations import Contract
-from slither.slithir.operations import SolidityCall
+from slither.slithir.operations import SolidityCall, LowLevelCall
 from slither.core.variables.state_variable import StateVariable
 
 from core.utils.read_slot import ReadSlot, ZERO_ADDRESS
@@ -13,9 +13,19 @@ from core.utils.source_code import get_sli_c_by_addr
 def is_proxy_mode(c:Contract) -> bool:
     for f in c.functions_entry_points:
         if f.is_fallback:
-            for ir in f.all_slithir_operations():
-                if isinstance(ir, SolidityCall) and ir.function.name.startswith("delegatecall") :
-                    return True
+            if f.compilation_unit.solc_version.startswith(('0.5','0.4')):
+                # 早期版本，汇编代码以 inline_asm 形式存在
+                for n in f.all_nodes():
+                    if n.inline_asm and "delegatecall" in n.inline_asm:
+                        return True
+            else:
+                for ir in f.all_slithir_operations():
+                    if isinstance(ir,SolidityCall) and ir.function.name.startswith("delegatecall"):
+                        return True
+                        
+                    if isinstance(ir, LowLevelCall) and ir.function_name == "delegatecall":
+                        return True
+                        
     return False 
 
 def check_proxy_state(proxy_c:Contract)->List[StateVariable]:
