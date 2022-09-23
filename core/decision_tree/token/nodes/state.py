@@ -38,5 +38,8 @@ class Erc721StateNode(DecisionNode):
     
     def check(self, token_info:TokenInfo) -> NodeReturn:    
         layerouts, node_return = _check(token_info, ERC721_E_view)
-        self.layerouts.extend(layerouts)
+        if node_return == NodeReturn.branch0:
+            self.add_infos(layerouts)
+        elif node_return == NodeReturn.reach_leaf:
+            self.add_warns(layerouts)
         return node_return

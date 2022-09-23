@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from typing import List
 from .token import TokenInfo
+from colorama import Fore
 
 @unique
 class NodeReturn(Enum):
@@ -20,6 +21,18 @@ class DecisionNode(metaclass=ABCMeta):
     parent = None
     layerouts:List[str] = None
     on_chain: bool = False
+
+    def add_warns(self, warns:List[str]):
+        self.layerouts.extend([Fore.RED + warn for warn in warns])
+
+    def add_warn(self, warn:str):
+        self.layerouts.append(Fore.RED + warn)
+
+    def add_infos(self, infos:List[str]):
+        self.layerouts.extend([Fore.GREEN + info for info in infos])
+
+    def add_info(self, info:str):
+        self.layerouts.append(Fore.GREEN + info)
     
     def output(self)->List[str]:
         all_layerouts = [] + self.layerouts

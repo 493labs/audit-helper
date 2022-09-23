@@ -11,14 +11,23 @@ def func_only_op_state(f: Function, is_write:bool, states_required: List[StateVa
     判断某方法是否只读取或写入了指定的states
     '''
     states = f.all_state_variables_written() if is_write else f.all_state_variables_read()
-
-    ret:List[str] = []
+    
+    surplus_states:List[StateVariable] = []
+    scarcity_states:List[StateVariable] = []
     for state in states:
         if state not in states_required:
-            ret.append(f" {f.full_name} 对 {state.name} 有意料之外的{'写入' if is_write else '读取'}")
+            surplus_states.append(state)
     for state in states_required:
         if state not in states:
-            ret.append(f" {f.full_name} 对 {state.name} 没有应该有的{'写入' if is_write else '读取'}")
+            scarcity_states.append(state)
+    
+    ret:List[str] = []
+    names = ','.join([state.name for state in surplus_states])
+    if names:
+        ret.append(f"{f.full_name} 对 {names} 有意料之外的{'写入' if is_write else '读取'}")
+    names = ','.join([state.name for state in scarcity_states])
+    if names:
+        ret.append(f"{f.full_name} 对 {names} 没有应该有的{'写入' if is_write else '读取'}")
     return ret
 
 def read_write_check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], List[Enum]]]) -> List[str]:
@@ -46,65 +55,53 @@ READ_FLAG = False
 
 msg_sender = SolidityVariableComposed("msg.sender")
 
-class Erc20RequiredFuncNode(DecisionNode):
-    def check(self, token_info: TokenInfo) -> NodeReturn:        
-        for e in ERC20_E_Require._member_map_.values():
-            if msg_sender not in token_info.get_f(e).all_solidity_variables_read():
-                self.layerouts.append(f'{e.name}未读取msg.sender') 
-        items = [
-            (ERC20_E_Require.transfer, [ERC20_E_view.balanceOf], [ERC20_E_view.balanceOf]),
-            (ERC20_E_Require.approve, [], [ERC20_E_view.allowance]),
-            (ERC20_E_Require.transferFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance], [ERC20_E_view.balanceOf,ERC20_E_view.allowance])
-        ]
-        self.layerouts.extend(read_write_check(token_info, items))
-        
-        if len(self.layerouts) == 0:
-            self.layerouts.append('标准方法读写集检查无异常')
-            return NodeReturn.reach_leaf
-        else:
-            self.layerouts.append('暂未对读写集异常情况进行分析')
-            return NodeReturn.reach_leaf
+class RequiredFuncNode(DecisionNode):
+    def check(self, token_info: TokenInfo) -> NodeReturn: 
+        def check_msg_sender(e:type[Enum]):       
+            for ee in e._member_map_.values():
+                if msg_sender not in token_info.get_f(ee).all_solidity_variables_read():
+                    self.add_warn(f'{e.name}未读取msg.sender') 
 
-class Erc721RequiredFuncNode(DecisionNode):
-    # enumerable_states:List[StateVariable] = None
-    # def get_enumerable_states(self)
-    def check(self, token_info: TokenInfo) -> NodeReturn:        
-        for e in ERC721_E_Require._member_map_.values():
-            if msg_sender not in token_info.get_f(e).all_solidity_variables_read():
-                self.layerouts.append(f'{e.name}未读取msg.sender') 
-        items = [
-            (
-                ERC721_E_Require.approve,
-                [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll],
-                [ERC721_E_view.getApproved]
-            ),
-            (
-                ERC721_E_Require.setApprovalForAll,
-                [],
-                [ERC721_E_view.isApprovedForAll]
-            ),
-            (
-                ERC721_E_Require.transferFrom,
-                [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-                [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-            ),
-            (
-                ERC721_E_Require.safeTransferFrom,
-                [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-                [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-            ),
-            (
-                ERC721_E_Require.safeTransferFrom2,
-                [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-                [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
-            )
-        ]
-        self.layerouts.extend(read_write_check(token_info, items))
-        
-        if len(self.layerouts) == 0:
-            self.layerouts.append('标准方法读写集检查无异常')
-            # self.layerouts.append('检查完毕，标准的erc721代币')
-            return NodeReturn.reach_leaf
+        if token_info.is_erc20:
+            check_msg_sender(ERC20_E_Require)
+            items = [
+                (ERC20_E_Require.transfer, [ERC20_E_view.balanceOf], [ERC20_E_view.balanceOf]),
+                (ERC20_E_Require.approve, [], [ERC20_E_view.allowance]),
+                (ERC20_E_Require.transferFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance], [ERC20_E_view.balanceOf,ERC20_E_view.allowance])
+            ]
+        elif token_info.is_erc721:
+            check_msg_sender(ERC721_E_Require)
+            items = [
+                (
+                    ERC721_E_Require.approve,
+                    [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll],
+                    [ERC721_E_view.getApproved]
+                ),
+                (
+                    ERC721_E_Require.setApprovalForAll,
+                    [],
+                    [ERC721_E_view.isApprovedForAll]
+                ),
+                (
+                    ERC721_E_Require.transferFrom,
+                    [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                    [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                ),
+                (
+                    ERC721_E_Require.safeTransferFrom,
+                    [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                    [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                ),
+                (
+                    ERC721_E_Require.safeTransferFrom2,
+                    [ERC721_E_view.ownerOf, ERC721_E_view.isApprovedForAll, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                    [ERC721_E_view.ownerOf, ERC721_E_view.getApproved, ERC721_E_view.balanceOf],
+                )
+            ]
+
+        layerouts = read_write_check(token_info, items)        
+        if len(layerouts) == 0:
+            self.add_info('标准方法读写集检查无异常')
         else:
-            self.layerouts.append('暂未对读写集异常情况进行分析')
-            return NodeReturn.reach_leaf
+            self.add_warns(layerouts)
+        return NodeReturn.branch0

@@ -50,6 +50,9 @@ class TokenInfo:
     用于代理模式
     '''
     
+    is_erc20: bool = False
+    is_erc721: bool = False
+    
     func_map:Mapping[Enum, Function] = {}
     state_map:Mapping[Enum, StateVariable] = {}
     state_to_funcs_map:Mapping[StateVariable, List[Function]] = {}

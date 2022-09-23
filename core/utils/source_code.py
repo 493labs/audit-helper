@@ -21,6 +21,18 @@ def get_contract_creation(chain:Chain, contract_address:str):
     txHash = result['txHash']
     return contractCreator, txHash
 
+def get_chz_logs(chain:Chain, contract_address:str, topic0:str):
+    ret = requests.get(chain.code_url, {
+        "module": "logs",
+        "action": "getLogs",
+        "fromBlock": 18509442,
+        "toBlock": "latest",
+        "address": contract_address,
+        "topic0": topic0
+    })
+    ret_json = ret.json()
+    return ret_json
+
 class SourceCode:
     def __init__(self, chain: Chain, addr: str, code_dir: str) -> None:
         self.chain = chain

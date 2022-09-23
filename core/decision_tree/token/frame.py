@@ -1,4 +1,5 @@
 from enum import Enum, unique
+from re import T
 from slither.core.declarations import Contract
 from eth_typing.evm import ChecksumAddress
 
@@ -9,18 +10,21 @@ from .common.base_node import generate_node, NodeReturn
 
 from .nodes.token_type import TokenTypeNode
 from .nodes.state import Erc20StateNode, Erc721StateNode
-from .nodes.write_close import Erc20CloseCheckNode, Erc721CloseCheckNode
+from .nodes.write_close import CloseCheckNode
 from .nodes.overflow import OverflowNode
-from .nodes.func_read_write import Erc20RequiredFuncNode, Erc721RequiredFuncNode
+from .nodes.func_read_write import RequiredFuncNode
+from .nodes.transfer_other import TransferOtherNode
+from .nodes.external_call import ExternalCallNode
 
 
 decision_tree = {
     TokenTypeNode: [Erc20StateNode, Erc721StateNode, TokenTypeNode],
     Erc20StateNode: [OverflowNode],
-    OverflowNode: [Erc20CloseCheckNode],
-    Erc20CloseCheckNode: [Erc20RequiredFuncNode],
-    Erc721StateNode: [Erc721CloseCheckNode],
-    Erc721CloseCheckNode: [Erc721RequiredFuncNode]
+    OverflowNode: [TransferOtherNode],
+    TransferOtherNode: [CloseCheckNode],    
+    Erc721StateNode: [CloseCheckNode],
+    CloseCheckNode: [RequiredFuncNode],
+    RequiredFuncNode: [ExternalCallNode]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):
@@ -38,6 +42,10 @@ def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddr
     while True:
         ret = cur_node.check(token_info)
         if ret == NodeReturn.reach_leaf:
-            return cur_node.output()
+            break                    
+        if cur_node.__class__ not in decision_tree:
+            break
         next_node = decision_tree[cur_node.__class__][ret.value]
         cur_node = generate_node(next_node, cur_node, on_chain)
+
+    return cur_node.output()

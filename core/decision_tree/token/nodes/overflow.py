@@ -64,8 +64,8 @@ class OverflowNode(DecisionNode):
                 if nodes:
                     nodes_have_risk.extend(nodes)
         if len(nodes_have_risk) == 0:
-            self.layerouts.append('溢出检查未发现异常')
+            self.add_info('溢出检查未发现异常')
         else:
             for node in set(nodes_have_risk):
-                self.layerouts.append(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
+                self.add_warns(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
         return NodeReturn.branch0

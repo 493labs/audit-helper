@@ -45,7 +45,8 @@ class TokenTypeNode(DecisionNode):
                 is_erc20 = False
                 break
         if is_erc20:
-            self.layerouts.append('合约为erc20')
+            token_info.is_erc20 = True
+            self.add_info('合约为erc20')
             return NodeReturn.branch0
 
         is_erc721 = True
@@ -54,21 +55,22 @@ class TokenTypeNode(DecisionNode):
                 is_erc721 = False
                 break
         if is_erc721:
-            self.layerouts.append('合约为erc721')
+            token_info.is_erc721 = True
+            self.add_info('合约为erc721')
             return NodeReturn.branch1
 
         if is_proxy_mode(token_info.c):
-            self.layerouts.append('合约为代理合约')
+            self.add_info('合约为代理合约')
             if not self.on_chain:
-                self.layerouts.append('进一步分析需要使用链上模式')
+                self.add_warn('进一步分析需要使用链上模式')
                 return NodeReturn.reach_leaf
 
-            self.layerouts.append(f'代理合约地址为 {token_info.address}')
+            self.add_info(f'代理合约地址为 {token_info.address}')
             read_slot = ReadSlot(token_info.chain)
             impl = read_slot.read_proxy_impl(token_info.address)[12:32].hex()
             admin = read_slot.read_proxy_admin(token_info.address)[12:32].hex()
-            self.layerouts.append(f'代理合约的实现地址为 {impl}')
-            self.layerouts.append(f'代理合约的管理员地址为 {admin}')
+            self.add_info(f'代理合约的实现地址为 {impl}')
+            self.add_info(f'代理合约的管理员地址为 {admin}')
             if impl == ZERO_ADDRESS:
                 return NodeReturn.reach_leaf
 
@@ -76,33 +78,33 @@ class TokenTypeNode(DecisionNode):
                 impl_c = get_sli_c_by_addr(token_info.chain, impl)
             except Exception as err:
                 tb = sys.exc_info()[2]
-                self.layerouts.append('获取实现合约contract对象失败，原因如下：')
-                self.layerouts.append(err.with_traceback(tb))
+                self.add_warn('获取实现合约contract对象失败，原因如下：')
+                self.add_warn(str(err))
                 return NodeReturn.reach_leaf
 
-            self.layerouts.append('获取实现合约成功，进行进一步分析')
+            self.add_info('获取实现合约成功，进行进一步分析')
             token_info.proxy_c = token_info.c
             token_info.c = impl_c
 
             # 代理合约状态检查
             states = check_proxy_state(token_info.proxy_c)
             if len(states) == 0:
-                self.layerouts.append('代理合约中不存在状态变量')
+                self.add_info('代理合约中不存在状态变量')
             else:
                 state_names = ','.join([state.name for state in states])
-                self.layerouts.append(f'代理合约中存在状态变量{state_names}')
+                self.add_warn(f'代理合约中存在状态变量{state_names}')
             
             # 实现合约初始化状态检查
             states = check_impl_state_init(token_info.c)
             if len(states) == 0:
-                self.layerouts.append('实现合约在部署时未对状态变量进行初始化')
+                self.add_info('实现合约在部署时未对状态变量进行初始化')
             else:
                 state_names = ','.join([state.name for state in states])
-                self.layerouts.append(f'实现合约在部署时对状态变量{state_names}进行了初始化')
+                self.add_warn(f'实现合约在部署时对状态变量{state_names}进行了初始化')
             
             return NodeReturn.branch2
 
-        self.layerouts.append(f'未知的合约类型，无法进一步分析')
+        self.add_warn(f'未知的合约类型，无法进一步分析')
         return NodeReturn.reach_leaf
 
 
