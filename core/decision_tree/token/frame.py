@@ -21,12 +21,12 @@ from .nodes.back_door import BackDoorNode
 decision_tree = {
     TokenTypeNode: [Erc20StateNode, Erc721StateNode, TokenTypeNode],
     Erc20StateNode: [OverflowNode],
-    OverflowNode: [TransferOtherNode],
-    TransferOtherNode: [CloseCheckNode],    
+    OverflowNode: [CloseCheckNode],    
     Erc721StateNode: [CloseCheckNode],
     CloseCheckNode: [RequiredFuncNode],
     RequiredFuncNode: [ExternalCallNode],
-    ExternalCallNode: [BackDoorNode]
+    ExternalCallNode: [TransferOtherNode],
+    TransferOtherNode: [BackDoorNode]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):

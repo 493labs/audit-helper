@@ -1,5 +1,5 @@
 from ..common.base_node import DecisionNode, NodeReturn
-from ..common.token import ERC20_E_Require, TokenInfo, ERC20_E_view, ERC721_E_view
+from ..common.token import ERC20_E_Require, ERC721_E_Require, TokenInfo, ERC20_E_view, ERC721_E_view
 
 from typing import Tuple
 from slither.core.declarations import SolidityFunction
@@ -67,11 +67,23 @@ def branch_read_state(node:Node, state:StateVariable)->Tuple[bool,bool]:
 class TransferOtherNode(DecisionNode):
     
     def check(self, token_info: TokenInfo) -> NodeReturn:
-        transfer_other_func = token_info.get_f(ERC20_E_Require.transferFrom)
-        allow_state = token_info.state_map[ERC20_E_view.allowance]
-        if branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
+        if token_info.is_erc20:
+            func_es = [ERC20_E_Require.transferFrom]
+            state_e = ERC20_E_view.allowance
+        elif token_info.is_erc721:
+            func_es = [ERC721_E_Require.transferFrom, ERC721_E_Require.safeTransferFrom, ERC721_E_Require.safeTransferFrom2]
+            state_e = ERC721_E_view.getApproved
+
+        warns = []
+        for func_e in func_es:
+            transfer_other_func = token_info.get_f(func_e)
+            allow_state = token_info.state_map[state_e]
+            if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
+                warns.append(f'{transfer_other_func.full_name} 存在未读取 {allow_state.name} 的路径')
+
+        if len(warns) == 0:
             self.add_info(f'未发现 {transfer_other_func.name} 有转移其他人代币的实现')
         else:
-            self.add_warn(f'{transfer_other_func.name} 存在未读取 {allow_state.name} 的路径')
+            self.add_warns(warns)
         return NodeReturn.branch0
 
