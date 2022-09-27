@@ -32,6 +32,7 @@ def change_solc_version(sol_path:str):
                 if line.startswith('solidity'):
                     line = line[8:-1].strip()
                     break
+        print(f'需要solc版本：{line}')
         # 1. pragma solidity 0.6.9;
         # 2. pragma solidity ^0.6.9;
         # 3. pragma solidity >=0.6.9 <=0.6.9;
@@ -53,8 +54,7 @@ def change_solc_version(sol_path:str):
                     break
         else:
             print(f'未考虑这种模式：{line}，可能需要人工设置')
-            return
-    print(f'需要solc版本：{obj_version}')
+            return    
 
     # 切换版本
     if  obj_version not in versions or obj_version == '':
