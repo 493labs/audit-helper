@@ -67,7 +67,7 @@ class TokenTypeNode(DecisionNode):
         if is_erc721:
             token_info.is_erc721 = True
             self.add_info('合约为erc721')
-            return NodeReturn.branch1
+            return NodeReturn.branch0
 
         if is_proxy_mode(token_info.c):
             self.add_info('合约为代理合约')
@@ -112,7 +112,7 @@ class TokenTypeNode(DecisionNode):
                 state_names = ','.join([state.name for state in states])
                 self.add_warn(f'实现合约在部署时对状态变量{state_names}进行了初始化')
             
-            return NodeReturn.branch2
+            return NodeReturn.branch1
 
         self.add_warn(f'未知的合约类型，无法进一步分析')
         return NodeReturn.reach_leaf

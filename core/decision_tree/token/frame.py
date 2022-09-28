@@ -9,7 +9,7 @@ from .common.token import TokenInfo
 from .common.base_node import generate_node, NodeReturn
 
 from .nodes.token_type import TokenTypeNode
-from .nodes.state import Erc20StateNode, Erc721StateNode
+from .nodes.state import StateNode
 from .nodes.write_close import CloseCheckNode
 from .nodes.overflow import OverflowNode
 from .nodes.func_read_write import RequiredFuncNode
@@ -19,10 +19,9 @@ from .nodes.back_door import BackDoorNode
 
 
 decision_tree = {
-    TokenTypeNode: [Erc20StateNode, Erc721StateNode, TokenTypeNode],
-    Erc20StateNode: [OverflowNode],
-    OverflowNode: [CloseCheckNode],    
-    Erc721StateNode: [CloseCheckNode],
+    TokenTypeNode: [StateNode, TokenTypeNode],
+    StateNode: [OverflowNode],
+    OverflowNode: [CloseCheckNode], 
     CloseCheckNode: [RequiredFuncNode],
     RequiredFuncNode: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],

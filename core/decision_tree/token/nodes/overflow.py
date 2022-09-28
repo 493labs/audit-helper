@@ -57,15 +57,16 @@ def overflow_check(f: Function) -> List[Node]:
 class OverflowNode(DecisionNode):
 
     def check(self, token_info: TokenInfo) -> NodeReturn:
-        nodes_have_risk: List[Node] = []
-        for e in [ERC20_E_view.balanceOf, ERC20_E_view.allowance]:
-            for f in token_info.enum_to_state_to_funcs(e):
-                nodes = overflow_check(f)
-                if nodes:
-                    nodes_have_risk.extend(nodes)
-        if len(nodes_have_risk) == 0:
-            self.add_info('溢出检查未发现异常')
-        else:
-            for node in set(nodes_have_risk):
-                self.add_warns(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
+        if token_info.is_erc20:
+            nodes_have_risk: List[Node] = []
+            for e in [ERC20_E_view.balanceOf, ERC20_E_view.allowance]:
+                for f in token_info.enum_to_state_to_funcs(e):
+                    nodes = overflow_check(f)
+                    if nodes:
+                        nodes_have_risk.extend(nodes)
+            if len(nodes_have_risk) == 0:
+                self.add_info('溢出检查未发现异常')
+            else:
+                for node in set(nodes_have_risk):
+                    self.add_warns(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
         return NodeReturn.branch0
