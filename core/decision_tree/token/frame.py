@@ -12,6 +12,7 @@ from .nodes.token_type import TokenTypeNode
 from .nodes.state import StateNode
 from .nodes.write_close import CloseCheckNode
 from .nodes.overflow import OverflowNode
+from .nodes.fake_recharge import FakeRecharge
 from .nodes.func_read_write import RequiredFuncNode
 from .nodes.transfer_other import TransferOtherNode
 from .nodes.external_call import ExternalCallNode
@@ -21,7 +22,8 @@ from .nodes.back_door import BackDoorNode
 decision_tree = {
     TokenTypeNode: [StateNode, TokenTypeNode],
     StateNode: [OverflowNode],
-    OverflowNode: [CloseCheckNode], 
+    OverflowNode: [FakeRecharge],
+    FakeRecharge: [CloseCheckNode], 
     CloseCheckNode: [RequiredFuncNode],
     RequiredFuncNode: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],
