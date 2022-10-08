@@ -22,6 +22,7 @@ class ERC20_E_Require(Enum):
 @unique
 class ERC20_E_Extend(Enum):
     burn = "burn(uint256)"
+    burnFrom = "burnFrom(address,uint256)"
     increaseAllowance = "increaseAllowance(address,uint256)"
     decreaseAllowance = "decreaseAllowance(address,uint256)"
 

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Tuple
 from ..common.base_node import DecisionNode, NodeReturn
-from ..common.token import ERC20_E_view, TokenInfo, ERC20_E_Require, ERC721_E_Require, ERC721_E_view
+from ..common.token import ERC20_E_view, TokenInfo, ERC20_E_Require, ERC20_E_Extend, ERC721_E_Require, ERC721_E_view
 
 from slither.core.declarations import  Function, SolidityVariableComposed
 from slither.core.variables.state_variable import StateVariable
@@ -59,7 +59,8 @@ class RequiredFuncNode(DecisionNode):
     def check(self, token_info: TokenInfo) -> NodeReturn: 
         def check_msg_sender(e:type[Enum]):       
             for ee in e._member_map_.values():
-                if msg_sender not in token_info.get_f(ee).all_solidity_variables_read():
+                f = token_info.get_f(ee)
+                if f and msg_sender not in f.all_solidity_variables_read():
                     self.add_warn(f'{e.name}未读取msg.sender') 
 
         if token_info.is_erc20:
@@ -69,6 +70,18 @@ class RequiredFuncNode(DecisionNode):
                 (ERC20_E_Require.approve, [], [ERC20_E_view.allowance]),
                 (ERC20_E_Require.transferFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance], [ERC20_E_view.balanceOf,ERC20_E_view.allowance])
             ]
+
+            check_msg_sender(ERC20_E_Extend)
+            if token_info.get_f(ERC20_E_Extend.burn):
+                items.append((ERC20_E_Extend.burn, [ERC20_E_view.balanceOf], [ERC20_E_view.balanceOf]))
+            if token_info.get_f(ERC20_E_Extend.burnFrom):
+                items.append((ERC20_E_Extend.burnFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance], [ERC20_E_view.balanceOf,ERC20_E_view.allowance]))
+            if token_info.get_f(ERC20_E_Extend.increaseAllowance):
+                items.append((ERC20_E_Extend.increaseAllowance, [ERC20_E_view.allowance], [ERC20_E_view.allowance]))
+            if token_info.get_f(ERC20_E_Extend.decreaseAllowance):
+                items.append((ERC20_E_Extend.decreaseAllowance, [ERC20_E_view.allowance], [ERC20_E_view.allowance]))
+
+
         elif token_info.is_erc721:
             check_msg_sender(ERC721_E_Require)
             items = [
