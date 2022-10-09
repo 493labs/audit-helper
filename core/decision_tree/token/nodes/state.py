@@ -30,7 +30,12 @@ class StateNode(DecisionNode):
                 warns.append(f'{e.name} 未找到相应的状态变量')
                 continue
 
-            states_count = len(states)
+            if e == ERC721_E_view.getApproved:
+                # 有些erc721实现会先通过ownerOf判断tokenId是否存在，再进一步读取approve
+                owner_state = token_info.state_map[ERC721_E_view.ownerOf]
+                states = [s for s in states if s != owner_state]
+
+            states_count = len(states)            
             if states_count != 1:
                 state_names = ','.join([state.name for state in states])
                 warns.append(f'{e.name} 读取的状态变量有 {state_names}')

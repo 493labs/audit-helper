@@ -18,6 +18,7 @@ from .nodes.transfer_other import TransferOtherNode
 from .nodes.external_call import ExternalCallNode
 from .nodes.back_door import BackDoorNode
 from .nodes.cheat_state import CheatState
+from .nodes.arbitrary_mint import ArbitraryMint
 
 
 decision_tree = {
@@ -27,7 +28,8 @@ decision_tree = {
     FakeRecharge: [CloseCheckNode], 
     CloseCheckNode: [RequiredFuncNode],
     RequiredFuncNode: [CheatState],
-    CheatState: [ExternalCallNode],
+    CheatState: [ArbitraryMint],
+    ArbitraryMint: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],
     TransferOtherNode: [BackDoorNode]
 }

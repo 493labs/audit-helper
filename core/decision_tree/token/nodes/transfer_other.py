@@ -35,7 +35,9 @@ def branch_read_state(node:Node, state:StateVariable)->Tuple[bool,bool]:
             if not isinstance(internal_call, SolidityFunction):
                 if branch_read_state(internal_call.entry_point,state)[0]:
                     is_read = True
-                    break
+                    # break 
+                    # 有两层循环，不能用break
+                    return is_read, contain_return
 
         if node.type == NodeType.RETURN:
             contain_return = True
@@ -82,7 +84,7 @@ class TransferOtherNode(DecisionNode):
                 warns.append(f'{transfer_other_func.full_name} 存在未读取 {allow_state.name} 的路径')
 
         if len(warns) == 0:
-            self.add_info(f'未发现 {transfer_other_func.name} 有转移其他人代币的实现')
+            self.add_info(f'未发现 transferFrom 模式的方法中有未经授权转移其他人代币的实现')
         else:
             self.add_warns(warns)
         return NodeReturn.branch0

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import unique, Enum
 from typing import List, Mapping, Union
 from slither.core.declarations import Contract, Function
+from slither.slithir.operations import LibraryCall, Binary, BinaryType
 from slither.core.variables.state_variable import StateVariable
 from eth_typing.evm import ChecksumAddress
 
@@ -75,3 +76,58 @@ class TokenInfo:
         # if e not in self.state_map:
         #     return None
         return self.state_to_funcs(self.state_map[e])
+
+    def get_mint_fs(self)->List[Function]:
+        if self.__mint_fs == None:
+            self.__get_mint_burn_fs()
+        return self.__mint_fs
+
+    __mint_fs: List[Function] = None
+    __burn_fs: List[Function] = None
+    def __get_mint_burn_fs(self):
+        self.__mint_fs = []
+        self.__burn_fs = []
+
+        if self.is_erc20:
+            balance_state = self.state_map[ERC20_E_view.balanceOf]
+        elif self.is_erc721:
+            balance_state = self.state_map[ERC721_E_view.balanceOf]
+        else:
+            assert False, '未知的 token 类型'
+
+        for f in self.c.functions_entry_points:
+            if f.is_constructor:
+                continue
+            if balance_state not in f.all_state_variables_written():
+                continue
+            
+            have_add_op = False
+            for node in f.all_nodes():
+                if balance_state in node.state_variables_written:
+                    for ir in node.irs:
+                        if isinstance(ir, LibraryCall) and ir.function_name == 'add':
+                            have_add_op = True
+                            break
+                        if isinstance(ir, Binary) and ir.type == BinaryType.ADDITION:
+                            have_add_op = True
+                            break
+                if have_add_op:
+                    break
+
+            have_sub_op = False
+            for node in f.all_nodes():
+                if balance_state in node.state_variables_written:
+                    for ir in node.irs:
+                        if isinstance(ir, LibraryCall) and ir.function_name == 'sub':
+                            have_sub_op = True
+                            break
+                        if isinstance(ir, Binary) and ir.type == BinaryType.SUBTRACTION:
+                            have_sub_op = True
+                            break
+                if have_sub_op:
+                    break
+
+            if have_add_op and not have_sub_op:
+                self.__mint_fs.append(f)
+            if not have_add_op and have_sub_op:
+                self.__burn_fs.append(f)
