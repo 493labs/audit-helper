@@ -17,6 +17,7 @@ from .nodes.func_read_write import RequiredFuncNode
 from .nodes.transfer_other import TransferOtherNode
 from .nodes.external_call import ExternalCallNode
 from .nodes.back_door import BackDoorNode
+from .nodes.cheat_state import CheatState
 
 
 decision_tree = {
@@ -25,7 +26,8 @@ decision_tree = {
     OverflowNode: [FakeRecharge],
     FakeRecharge: [CloseCheckNode], 
     CloseCheckNode: [RequiredFuncNode],
-    RequiredFuncNode: [ExternalCallNode],
+    RequiredFuncNode: [CheatState],
+    CheatState: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],
     TransferOtherNode: [BackDoorNode]
 }
