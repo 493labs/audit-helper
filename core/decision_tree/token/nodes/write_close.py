@@ -13,7 +13,7 @@ def _check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], List[Enum]]]
             funcs_extend = [token_info.get_f(func_e) for func_e in item[2]]
         funcs_accident = [f for f in funcs if f not in funcs_required and f not in funcs_extend]
         if len(funcs_accident) > 0:
-            fnames = ','.join([f.name for f in funcs_accident])
+            fnames = ','.join([f.full_name for f in funcs_accident])
             layerouts.append(f'非标准方法 {fnames} 对 {token_info.state_map[item[0]].name} 具有写入操作')    
     
     return layerouts

@@ -26,6 +26,6 @@ class ArbitraryMint(DecisionNode):
         if len(dangerous_fs) == 0:
             self.add_info(f'未发现不经授权就可任意 mint 的方法')
         else:
-            fnames = ','.join([f.name for f in dangerous_fs])
+            fnames = ','.join([f.full_name for f in dangerous_fs])
             self.add_warn(f'{fnames} 存在不经授权就可任意 mint 的风险')  
         return NodeReturn.branch0

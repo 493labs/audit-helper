@@ -33,7 +33,7 @@ class ExternalCallNode(DecisionNode):
                         continue
                     if ir.function_name in ['onERC721Received']:
                         continue
-                    self.add_warn(f"{func.name} 方法中执行了外部调用 {ir.node.expression}")
+                    self.add_warn(f"{func.full_name} 方法中执行了外部调用 {ir.node.expression}")
  
         if len(self.layerouts) == 0:
             self.add_info('写入重要状态的方法不存在外部调用')

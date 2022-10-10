@@ -12,7 +12,7 @@ class CheatState(DecisionNode):
             if len(cheat_fs) == 0:
                 self.add_info(f'未发现 {totalSupply_state.name} 未增加的 mint 行为')
             else:
-                fnames = ','.join([f.name for f in cheat_fs])
+                fnames = ','.join([f.full_name for f in cheat_fs])
                 self.add_warn(f'{fnames} 存在 mint 行为但 {totalSupply_state.name} 未增加')  
 
         return NodeReturn.branch0
