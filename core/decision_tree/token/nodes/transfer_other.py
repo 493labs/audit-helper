@@ -66,6 +66,7 @@ def branch_read_state(node:Node, state:StateVariable)->Tuple[bool,bool]:
     return (is_read, contain_return)
 
 # 基于dominators简单实现
+# 有bug，未覆盖前置程序中存在if的情况
 def all_branchs_read_state(f: Function, s:StateVariable):
     for node in f.nodes_ordered_dominators:
         if node.type == NodeType.RETURN:
@@ -90,8 +91,8 @@ class TransferOtherNode(DecisionNode):
         for func_e in func_es:
             transfer_other_func = token_info.get_f(func_e)
             allow_state = token_info.state_map[state_e]
-            # if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
-            if not all_branchs_read_state(transfer_other_func, allow_state):
+            if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
+            # if not all_branchs_read_state(transfer_other_func, allow_state):
                 warns.append(f'{transfer_other_func.full_name} 存在未读取 {allow_state.name} 的路径')
 
         if len(warns) == 0:
