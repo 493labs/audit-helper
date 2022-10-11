@@ -1,8 +1,8 @@
 from ..common.base_node import DecisionNode, NodeReturn
 from ..common.token import ERC20_E_Require, ERC721_E_Require, TokenInfo, ERC20_E_view, ERC721_E_view
 
-from typing import Tuple
-from slither.core.declarations import SolidityFunction
+from typing import List, Tuple
+from slither.core.declarations import SolidityFunction, Function
 from slither.core.variables.state_variable import StateVariable
 from slither.core.cfg.node import Node, NodeType
 def get_dominance_frontier(node: Node)-> Node:
@@ -65,7 +65,17 @@ def branch_read_state(node:Node, state:StateVariable)->Tuple[bool,bool]:
         node = node.sons[0]
     return (is_read, contain_return)
 
-
+# 基于dominators简单实现
+def all_branchs_read_state(f: Function, s:StateVariable):
+    for node in f.nodes_ordered_dominators:
+        if node.type == NodeType.RETURN:
+            all_state_read = {s for n in node.dominators for s in n.state_variables_read}
+            all_internal_calls = {ic for n in node.dominators for ic in n.internal_calls}
+            all_state_read |= {s for ic in all_internal_calls for s in ic.all_state_variables_read()}
+            if s not in all_state_read:
+                return False
+    return True
+    
 class TransferOtherNode(DecisionNode):
     
     def check(self, token_info: TokenInfo) -> NodeReturn:
@@ -80,7 +90,8 @@ class TransferOtherNode(DecisionNode):
         for func_e in func_es:
             transfer_other_func = token_info.get_f(func_e)
             allow_state = token_info.state_map[state_e]
-            if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
+            # if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
+            if not all_branchs_read_state(transfer_other_func, allow_state):
                 warns.append(f'{transfer_other_func.full_name} 存在未读取 {allow_state.name} 的路径')
 
         if len(warns) == 0:
