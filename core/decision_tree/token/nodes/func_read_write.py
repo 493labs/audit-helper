@@ -11,6 +11,7 @@ def func_only_op_state(f: Function, is_write:bool, states_required: List[StateVa
     判断某方法是否只读取或写入了指定的states
     '''
     states = f.all_state_variables_written() if is_write else f.all_state_variables_read()
+    states = [s for s in states if not s.is_constant and not s.is_immutable]
     
     surplus_states:List[StateVariable] = []
     scarcity_states:List[StateVariable] = []
@@ -45,6 +46,12 @@ def read_write_check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], Li
                     enumerable_states.append(state)
             states_read.extend(enumerable_states)
             states_write.extend(enumerable_states)
+
+            # erc721a 的实现中有_currentIndex，影响后续分析
+            if token_info.is_erc721a:
+                state = token_info.c.get_state_variable_from_name('_currentIndex')
+                if state:
+                    states_read.append(state)
 
         layerouts.extend(func_only_op_state(f, READ_FLAG, states_read))
         layerouts.extend(func_only_op_state(f, WRITE_FLAG, states_write))

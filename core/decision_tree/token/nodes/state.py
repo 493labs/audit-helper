@@ -30,6 +30,9 @@ class StateNode(DecisionNode):
                 warns.append(f'{e.name} 未找到相应的状态变量')
                 continue
 
+            if token_info.is_erc721a and e in [ERC721_E_view.ownerOf, ERC721_E_view.getApproved]:
+                # erc721a 的实现中可能会读取_currentIndex，影响后面的分析
+                states = [s for s in states if s.name != '_currentIndex']
             if e == ERC721_E_view.getApproved:
                 # 有些erc721实现会先通过ownerOf判断tokenId是否存在，再进一步读取approve
                 owner_state = token_info.state_map[ERC721_E_view.ownerOf]

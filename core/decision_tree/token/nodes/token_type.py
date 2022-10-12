@@ -66,7 +66,17 @@ class TokenTypeNode(DecisionNode):
                 break
         if is_erc721:
             token_info.is_erc721 = True
-            self.add_info('合约为erc721')
+            is_erc721a = False
+            for cc in token_info.c.inheritance + [token_info.c]:
+                if cc.name.lower() == 'erc721a':
+                    is_erc721a = True                    
+                    break
+
+            if is_erc721a:
+                token_info.is_erc721a = True
+                self.add_info('合约为erc721a')
+            else:
+                self.add_info('合约为erc721')
             return NodeReturn.branch0
 
         if is_proxy_mode(token_info.c):

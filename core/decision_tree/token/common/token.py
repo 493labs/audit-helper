@@ -54,6 +54,7 @@ class TokenInfo:
     
     is_erc20: bool = False
     is_erc721: bool = False
+    is_erc721a: bool = False
     
     func_map:Mapping[Enum, Function] = {}
     state_map:Mapping[Enum, StateVariable] = {}
