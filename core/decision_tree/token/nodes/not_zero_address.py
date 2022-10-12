@@ -18,8 +18,8 @@ class NotZeroAddress(DecisionNode):
                 cur_address_param_can_zero = True
                 for node in f.nodes:
                     if node.is_conditional(False) \
-                        and param in node.local_variables_read \
-                        and ('address(0)' in str(node.expression) or 'address(0x0)' in str(node.expression)):                          
+                      and param in node.local_variables_read :
+                        # and ('address(0)' in str(node.expression) or 'address(0x0)' in str(node.expression)):                          
                         cur_address_param_can_zero = False
                         break
                     if node.internal_calls:
@@ -54,8 +54,8 @@ class NotZeroAddress(DecisionNode):
             
         if f_ps_can_zero:
             fnames = ','.join([f.name for f in f_ps_can_zero])
-            self.add_warn(f'{fnames} 存在地址参数未进行非零校验')
+            self.add_warn(f'{fnames} 存在地址参数未进行校验')
         else:
-            self.add_info(f'非零地址检查未见异常')
+            self.add_info(f'地址参数检查未见异常')
 
         return NodeReturn.branch0
