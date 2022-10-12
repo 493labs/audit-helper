@@ -20,6 +20,7 @@ from .nodes.back_door import BackDoorNode
 from .nodes.cheat_state import CheatState
 from .nodes.arbitrary_mint import ArbitraryMint
 from .nodes.calculation_order import CalculationOrder
+from .nodes.not_zero_address import NotZeroAddress
 
 
 decision_tree = {
@@ -33,7 +34,8 @@ decision_tree = {
     CheatState: [ArbitraryMint],
     ArbitraryMint: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],
-    TransferOtherNode: [BackDoorNode]
+    TransferOtherNode: [BackDoorNode],
+    BackDoorNode: [NotZeroAddress]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):
