@@ -21,6 +21,7 @@ from .nodes.cheat_state import CheatState
 from .nodes.arbitrary_mint import ArbitraryMint
 from .nodes.calculation_order import CalculationOrder
 from .nodes.not_zero_address import NotZeroAddress
+from .nodes.search_loop import SearchLoop
 
 
 decision_tree = {
@@ -35,7 +36,8 @@ decision_tree = {
     ArbitraryMint: [ExternalCallNode],
     ExternalCallNode: [TransferOtherNode],
     TransferOtherNode: [BackDoorNode],
-    BackDoorNode: [NotZeroAddress]
+    BackDoorNode: [NotZeroAddress],
+    NotZeroAddress: [SearchLoop]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):
