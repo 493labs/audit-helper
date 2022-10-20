@@ -80,9 +80,9 @@ class RequiredFuncNode(DecisionNode):
 
             check_msg_sender(ERC20_E_Extend)
             if token_info.get_f(ERC20_E_Extend.burn):
-                items.append((ERC20_E_Extend.burn, [ERC20_E_view.balanceOf], [ERC20_E_view.balanceOf]))
+                items.append((ERC20_E_Extend.burn, [ERC20_E_view.balanceOf, ERC20_E_view.totalSupply], [ERC20_E_view.balanceOf, ERC20_E_view.totalSupply]))
             if token_info.get_f(ERC20_E_Extend.burnFrom):
-                items.append((ERC20_E_Extend.burnFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance], [ERC20_E_view.balanceOf,ERC20_E_view.allowance]))
+                items.append((ERC20_E_Extend.burnFrom, [ERC20_E_view.balanceOf,ERC20_E_view.allowance, ERC20_E_view.totalSupply], [ERC20_E_view.balanceOf,ERC20_E_view.allowance, ERC20_E_view.totalSupply]))
             if token_info.get_f(ERC20_E_Extend.increaseAllowance):
                 items.append((ERC20_E_Extend.increaseAllowance, [ERC20_E_view.allowance], [ERC20_E_view.allowance]))
             if token_info.get_f(ERC20_E_Extend.decreaseAllowance):

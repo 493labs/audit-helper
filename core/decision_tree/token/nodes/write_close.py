@@ -25,7 +25,7 @@ class CloseCheckNode(DecisionNode):
         if token_info.is_erc20:
             items = [
                 (ERC20_E_view.balanceOf, [ERC20_E_Require.transfer, ERC20_E_Require.transferFrom], [ERC20_E_Extend.burn, ERC20_E_Extend.burnFrom]),
-                (ERC20_E_view.allowance, [ERC20_E_Require.approve, ERC20_E_Require.transferFrom], [ERC20_E_Extend.increaseAllowance, ERC20_E_Extend.decreaseAllowance])
+                (ERC20_E_view.allowance, [ERC20_E_Require.approve, ERC20_E_Require.transferFrom], [ERC20_E_Extend.burnFrom, ERC20_E_Extend.increaseAllowance, ERC20_E_Extend.decreaseAllowance])
             ]
         elif token_info.is_erc721:
             items = [
