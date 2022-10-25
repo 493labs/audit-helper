@@ -3,7 +3,7 @@ from slither.core.declarations import Contract
 from slither.slithir.operations import SolidityCall
 from eth_typing.evm import HexAddress
 from core.common.e import Chain
-from core.utils.read_slot import ReadSlot
+from core.utils.node_api import ReadSlot
 
 class ProxyMode:
     def is_proxy_mode(self, c:Contract) -> bool:

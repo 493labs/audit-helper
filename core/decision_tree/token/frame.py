@@ -4,7 +4,7 @@ from slither.core.declarations import Contract
 from eth_typing.evm import ChecksumAddress
 
 from core.common.e import Chain
-from core.utils.source_code import get_sli_c_by_addr
+from core.utils.scan_api import get_sli_c_by_addr
 from .common.token import TokenInfo
 from .common.base_node import generate_node, NodeReturn
 

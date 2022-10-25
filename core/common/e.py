@@ -22,4 +22,5 @@ class Chain(Enum):
     Polygon = "https://rpc-mainnet.matic.quiknode.pro", "http://api.polygonscan.com/api", 137
     # CHZ 无法读取链上slot  https://explorer.chiliz.com/eth-rpc-api-docs
     CHZ = "https://explorer.chiliz.com/api/eth-rpc", "http://explorer.chiliz.com/api", 999
+    STEP = "https://stepscan.io/api", "http://stepscan.io/api", 998
 

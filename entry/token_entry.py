@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.append('.')
 from core.common.e import Chain
-from core.utils.source_code import get_sli_c_by_addr,download
+from core.utils.scan_api import get_sli_c_by_addr,download
 from core.decision_tree.token.frame import make_decision
 
 DOWNLOAD = 'download'

@@ -7,8 +7,8 @@ from slither.core.declarations import Contract
 from slither.slithir.operations import SolidityCall, LowLevelCall
 from slither.core.variables.state_variable import StateVariable
 
-from core.utils.read_slot import ReadSlot, ZERO_ADDRESS
-from core.utils.source_code import get_sli_c_by_addr
+from core.utils.node_api import ReadSlot, ZERO_ADDRESS
+from core.utils.scan_api import get_sli_c_by_addr
 
 def is_proxy_mode(c:Contract) -> bool:
     for f in c.functions_entry_points:
