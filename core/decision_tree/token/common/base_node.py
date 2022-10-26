@@ -28,6 +28,12 @@ class DecisionNode(metaclass=ABCMeta):
     def add_warn(self, warn:str):
         self.layerouts.append(Fore.RED + warn)
 
+    def add_warn_infos(self, warn_infos:List[str]):
+        self.layerouts.extend([Fore.YELLOW + warn_info for warn_info in warn_infos])
+
+    def add_warn_info(self, warn_info:str):
+        self.layerouts.append(Fore.YELLOW + warn_info)
+
     def add_infos(self, infos:List[str]):
         self.layerouts.extend([Fore.GREEN + info for info in infos])
 

@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Tuple, Union
 from slither.core.declarations import Contract
 from slither.core.variables.state_variable import StateVariable
+from slither.core.solidity_types import MappingType, ElementaryType
 
 from ..common.base_node import DecisionNode, NodeReturn
 from ..common.token import ERC20_E_view, ERC721_E_view, TokenInfo
@@ -16,6 +17,21 @@ def get_e_view_state(c:Contract, e_view:Union[ERC20_E_view, ERC721_E_view] )->Li
     return None
 
 class StateNode(DecisionNode):
+
+    def is_safemoon(self, token_info: TokenInfo) -> bool:
+        balance_f = token_info.get_f(ERC20_E_view.balanceOf)
+        if balance_f:
+            address_to_uints = []
+            address_to_bools = []
+            for state in balance_f.all_state_variables_read():
+                if isinstance(state.type, MappingType) and isinstance(state.type.type_from, ElementaryType) and state.type.type_from.type == 'address':
+                    if isinstance(state.type.type_to, ElementaryType) and 'int' in state.type.type_to.type:
+                        address_to_uints.append(state)
+                    elif isinstance(state.type.type_to, ElementaryType) and state.type.type_to.type == 'bool':
+                        address_to_bools.append(state)
+            if len(address_to_uints) >= 2 and len(address_to_bools) >= 1:
+                return True
+        return False
     
     def check(self, token_info: TokenInfo) -> NodeReturn:        
         if token_info.is_erc20:
@@ -47,7 +63,10 @@ class StateNode(DecisionNode):
             token_info.state_map[e] = states[0]
         
         if len(warns) > 0:
-            self.add_warns(warns)
+            if token_info.is_erc20 and self.is_safemoon(token_info):
+                self.add_warn_info('该 token 采用了 safemoon 模式')
+            else:
+                self.add_warns(warns)
             return NodeReturn.reach_leaf
         else:
             e_view_names = ','.join(token_e_view._member_names_)
