@@ -11,33 +11,45 @@ from .common.base_node import generate_node, NodeReturn
 from .nodes.token_type import TokenTypeNode
 from .nodes.state import StateNode
 from .nodes.write_close import CloseCheckNode
-from .nodes.overflow import OverflowNode
-from .nodes.fake_recharge import FakeRecharge
 from .nodes.func_read_write import RequiredFuncNode
-from .nodes.transfer_other import TransferOtherNode
-from .nodes.external_call import ExternalCallNode
-from .nodes.back_door import BackDoorNode
-from .nodes.cheat_state import CheatState
-from .nodes.arbitrary_mint import ArbitraryMint
-from .nodes.calculation_order import CalculationOrder
-from .nodes.not_zero_address import NotZeroAddress
-from .nodes.search_loop import SearchLoop
+
+from .nodes.transfer.search_loop import SearchLoop
+from .nodes.transfer.transfer_other import TransferOtherNode
+
+from .nodes.mint.cheat_state import CheatState
+from .nodes.mint.arbitrary_mint import ArbitraryMint
+
+from .nodes.general.back_door import BackDoorNode
+from .nodes.general.external_call import ExternalCallNode
+from .nodes.general.calculation_order import CalculationOrder
+from .nodes.general.not_zero_address import NotZeroAddress
+
+from .nodes.erc20.overflow import OverflowNode
+from .nodes.erc20.fake_recharge import FakeRecharge
 
 
 decision_tree = {
     TokenTypeNode: [StateNode, TokenTypeNode],
-    StateNode: [OverflowNode],
-    OverflowNode: [FakeRecharge],
-    FakeRecharge: [CloseCheckNode], 
+    StateNode: [CloseCheckNode],
     CloseCheckNode: [RequiredFuncNode],
-    RequiredFuncNode: [CalculationOrder],
-    CalculationOrder: [CheatState],
+    RequiredFuncNode: [SearchLoop],
+
+    # transfer 相关
+    SearchLoop: [TransferOtherNode],
+    TransferOtherNode: [CheatState],
+
+    # mint 相关
     CheatState: [ArbitraryMint],
-    ArbitraryMint: [ExternalCallNode],
-    ExternalCallNode: [TransferOtherNode],
-    TransferOtherNode: [BackDoorNode],
+    ArbitraryMint: [CalculationOrder],
+
+    # 通用性
+    CalculationOrder: [ExternalCallNode],
+    ExternalCallNode: [BackDoorNode],
     BackDoorNode: [NotZeroAddress],
-    NotZeroAddress: [SearchLoop]
+    NotZeroAddress: [OverflowNode],
+
+    # erc20 特有
+    OverflowNode: [FakeRecharge]
 }
 
 def make_decision(on_chain: bool=False, chain: Chain=None, address: ChecksumAddress = None, c: Contract=None ):

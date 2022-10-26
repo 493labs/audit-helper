@@ -1,5 +1,5 @@
-from ..common.base_node import DecisionNode, NodeReturn
-from ..common.token import ERC721_E_view, TokenInfo
+from ...common.base_node import DecisionNode, NodeReturn
+from ...common.token import ERC721_E_view, TokenInfo
 
 from slither.core.solidity_types import ElementaryType
 from slither.core.declarations import Function

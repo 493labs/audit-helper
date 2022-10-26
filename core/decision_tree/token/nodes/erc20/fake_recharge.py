@@ -1,5 +1,5 @@
-from ..common.base_node import DecisionNode, NodeReturn
-from ..common.token import ERC20_E_Require, TokenInfo
+from ...common.base_node import DecisionNode, NodeReturn
+from ...common.token import ERC20_E_Require, TokenInfo
 
 from slither.core.declarations import  Function
 from slither.slithir.operations import InternalCall,Return
