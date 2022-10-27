@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Union
 from ...base_node import TokenDecisionNode, NodeReturn
-from ...token import TokenInfo, ERC20_E_view, ERC721_E_view
+from ...token_info import TokenInfo, ERC20_E_view, ERC721_E_view
 
 from slither.core.declarations import Function
 from slither.slithir.operations import HighLevelCall, LowLevelCall

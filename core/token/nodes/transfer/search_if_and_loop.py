@@ -1,6 +1,6 @@
 from distutils import core
 from ...base_node import TokenDecisionNode, NodeReturn
-from ...token import ERC20_E_view, ERC721_E_view, TokenInfo, ERC20_E_Require, ERC721_E_Require
+from ...token_info import ERC20_E_view, ERC721_E_view, TokenInfo, ERC20_E_Require, ERC721_E_Require
 
 from slither.core.declarations import Function
 from slither.core.cfg.node import NodeType

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from core.frame.base_node import DecisionNode, NodeReturn
 from core.frame.contract_info import ContractInfo
-from .token import TokenInfo
+from .token_info import TokenInfo
 
 class TokenDecisionNode(DecisionNode):
     

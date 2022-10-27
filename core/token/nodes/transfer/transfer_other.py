@@ -1,5 +1,5 @@
 from ...base_node import TokenDecisionNode, NodeReturn
-from ...token import ERC20_E_Require, ERC721_E_Require, TokenInfo, ERC20_E_view, ERC721_E_view
+from ...token_info import ERC20_E_Require, ERC721_E_Require, TokenInfo, ERC20_E_view, ERC721_E_view
 
 from typing import List, Tuple
 from slither.core.declarations import SolidityFunction, Function

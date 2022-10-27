@@ -5,7 +5,7 @@ from slither.core.variables.state_variable import StateVariable
 from slither.core.solidity_types import MappingType, ElementaryType
 
 from ..base_node import TokenDecisionNode, NodeReturn
-from ..token import ERC20_E_view, ERC721_E_view, TokenInfo
+from ..token_info import ERC20_E_view, ERC721_E_view, TokenInfo
 
 def get_e_view_state(c:Contract, e_view:Union[ERC20_E_view, ERC721_E_view] )->List[StateVariable]:
     for s in c.state_variables:

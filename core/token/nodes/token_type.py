@@ -1,7 +1,7 @@
 import sys
 from typing import List
 from ..base_node import TokenDecisionNode, NodeReturn
-from ..token import TokenInfo, ERC20_E_Require, ERC721_E_Require
+from ..token_info import TokenInfo, ERC20_E_Require, ERC721_E_Require
 
 from slither.core.declarations import Contract
 from slither.slithir.operations import SolidityCall, LowLevelCall

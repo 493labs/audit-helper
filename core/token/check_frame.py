@@ -6,7 +6,7 @@ from core.utils.url import Chain
 from core.utils.scan_api import get_sli_c_by_addr
 from core.frame.frame import make_decision
 
-from .token import TokenInfo
+from .token_info import TokenInfo
 from .base_node import TokenDecisionNode
 from .tree_config import token_decision_tree, TokenTypeNode
 

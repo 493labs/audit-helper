@@ -1,5 +1,5 @@
 from ...base_node import TokenDecisionNode, NodeReturn
-from ...token import ERC20_E_view, TokenInfo
+from ...token_info import ERC20_E_view, TokenInfo
 from slither.core.solidity_types import ElementaryType
 
 class CheatState(TokenDecisionNode):

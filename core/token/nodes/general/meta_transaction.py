@@ -1,5 +1,5 @@
 from ...base_node import TokenDecisionNode, NodeReturn
-from ...token import TokenInfo
+from ...token_info import TokenInfo
 
 class MetaTransaction(TokenDecisionNode):
 

@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from ..base_node import TokenDecisionNode, NodeReturn
-from ..token import *
+from ..token_info import *
 
 
 def _check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], List[Enum]]]) -> List[str]:
