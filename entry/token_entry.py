@@ -2,9 +2,9 @@ from configparser import ConfigParser
 import os
 import sys
 sys.path.append('.')
-from core.common.e import Chain
+from core.utils.url import Chain
 from core.utils.scan_api import get_sli_c_by_addr,download
-from core.decision_tree.token.frame import make_decision
+from core.token.check_frame import token_decision
 
 DOWNLOAD = 'download'
 
@@ -17,7 +17,7 @@ def handle(config: ConfigParser):
 
     if config.getboolean(DOWNLOAD, 'with_token_check'):
         c = get_sli_c_by_addr(chain, token_address)
-        layerouts = make_decision(on_chain=True, chain=chain, address=token_address, c=c)
+        layerouts = token_decision(on_chain=True, chain=chain, address=token_address, c=c)
         for layerout in layerouts:
             print(layerout)
     else:

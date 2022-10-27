@@ -2,7 +2,7 @@ from configparser import ConfigParser
 import json
 import os
 import requests
-from core.common.e import Chain
+from core.utils.url import Chain
 from core.utils.change_solc_version import change_solc_version
 from slither import Slither
 from slither.core.declarations import Contract

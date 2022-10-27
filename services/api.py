@@ -3,8 +3,8 @@ from flask import request, Response
 from web3 import Web3
 import sys
 sys.path.append('.')
-from core.common.e import Chain
-from core.decision_tree.token.frame import make_decision
+from core.utils.url import Chain
+from core.token.check_frame import token_decision
 
 
 # from flask_restful import Api, Resource
@@ -20,7 +20,7 @@ def getInfo():
         w3 = Web3()
         assert w3.isAddress(addr),f'{addr}不是一个合法地址'
         
-        layerouts = make_decision(on_chain=True, chain=chain, address=addr)
+        layerouts = token_decision(on_chain=True, chain=chain, address=addr)
     except Exception as err:
         return f'{err}'
     else:        

@@ -4,7 +4,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from eth_utils.abi import event_signature_to_log_topic
 
-from core.common.e import Chain
+from core.utils.url import Chain
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
