@@ -2,49 +2,42 @@ import * as sol_web3 from '@solana/web3.js'
 import * as spl_token from '@solana/spl-token'
 import * as metadata from '@metaplex-foundation/mpl-token-metadata'
 
-const run = async () => {
-    const url = 'http://solana-mainnet.phantom.tech'
-    
-    const conn = new sol_web3.Connection(url)
-    const mint = new sol_web3.PublicKey('5PH7seRmF3fAnCHD3BxGJFY9TUsxHkFYAZnQW5a46Fkp')
-    const eoa = new sol_web3.PublicKey('TApaymKorUxmHchfsx5f8b8zeVAY9KvqCs3qPva2j9Z')
+import * as fs from "fs"
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-    const mint_account = await conn.getAccountInfo(mint)
-    const eoa_account = await conn.getAccountInfo(eoa)
-    console.log('------------mint_account------------')
-    console.log(mint_account)
-    console.log('------------eoa_account------------')
-    console.log(eoa_account)
+const conf = JSON.parse(fs.readFileSync(__dirname+'/config.json'))
+const address_str = conf.address
+const is_spl_token = conf.is_spl_token
+const is_metaplex = conf.is_metaplex
 
-    const token = new spl_token.Token(conn, mint, spl_token.TOKEN_PROGRAM_ID, mint)
-    const mint_info = await token.getMintInfo()
-    console.log('------------mint_info------------')
-    console.log(mint_info)
-    const associated_account = await token.getOrCreateAssociatedAccountInfo(eoa)
-    console.log('------------associated_account------------')
-    console.log(associated_account)
-    // const account_info = await token.getAccountInfo(associated_account.address)  
+const conn = new sol_web3.Connection('http://solana-mainnet.phantom.tech')
 
-    const pda_key = await metadata.Metadata.getPDA(mint)
-    const pda = await metadata.Metadata.load(conn,pda_key)
-    console.log('------------pda------------')
-    console.log(pda)
-    
+const run = async () => { 
+    const address = new sol_web3.PublicKey(address_str)   
+    const account_info = await conn.getAccountInfo(address)
+    console.log('------------account_info------------')
+    console.log(account_info)
+    console.log('owner: %s',account_info.owner.toString())
+
+    if (is_spl_token) {
+        const token = new spl_token.Token(conn, address, spl_token.TOKEN_PROGRAM_ID, address)
+        const mint_info = await token.getMintInfo()
+        console.log('------------mint_info------------')
+        // 对于nft来说，总供应为1，精度为0，且mint权限为空；但对基于metaplex的token来说，具有mint权限，但实际上无效
+        console.log(mint_info)
+        console.log('supply: %s', mint_info.supply.toString())
+
+        if (is_metaplex) {
+            const pda_key = await metadata.Metadata.getPDA(address)
+            const pda = await metadata.Metadata.load(conn,pda_key)
+            console.log('------------pda------------')
+            console.log(pda)
+        }
+    }    
 }
-const run2 = async () => {
-    const url = 'http://solana-mainnet.phantom.tech'
-    
-    const conn = new sol_web3.Connection(url)
-    const mint = new sol_web3.PublicKey('9F6UqFvxhZeTF373LzJ92H86EwpTgKRyrR35npf4BSFt')
 
-    const mint_account = await conn.getAccountInfo(mint)
-    console.log('------------mint_account------------')
-    console.log(mint_account)
-
-    const token = new spl_token.Token(conn, mint, spl_token.TOKEN_PROGRAM_ID, mint)
-    const mint_info = await token.getMintInfo()
-    console.log('------------mint_info------------')
-    console.log(mint_info)    
-}
-run2()
+run()
 
