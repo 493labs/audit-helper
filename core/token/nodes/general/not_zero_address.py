@@ -54,7 +54,7 @@ class NotZeroAddress(TokenDecisionNode):
             
         if f_ps_can_zero:
             fnames = ','.join([f.name for f in f_ps_can_zero])
-            self.add_warn_info(f'{fnames} 存在地址参数未进行校验')
+            self.add_focus(f'{fnames} 存在地址参数未进行校验')
         else:
             self.add_info(f'地址参数检查未见异常')
 

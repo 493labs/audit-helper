@@ -64,7 +64,7 @@ class StateNode(TokenDecisionNode):
         
         if len(warns) > 0:
             if token_info.is_erc20 and self.is_safemoon(token_info):
-                self.add_warn_info('该 token 采用了 safemoon 模式')
+                self.add_focus('该 token 采用了 safemoon 模式')
             else:
                 self.add_warns(warns)
             return NodeReturn.reach_leaf
