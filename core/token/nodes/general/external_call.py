@@ -28,6 +28,12 @@ class ExternalCallNode(TokenDecisionNode):
         for func in funcs:
             for ir in func.all_slithir_operations():
                 if isinstance(ir, Union[LowLevelCall, HighLevelCall]):
+                    # 如果调用自身方法，则ir.function有可能是一个变量
+                    # ECOx
+                    # ERC20Pausable(_self).pauser();
+                    # address public pauser;
+                    if not isinstance(ir.function, Function):
+                        continue
                     if ir.function.contract_declarer.kind == "library":
                         # library不算外部调用
                         continue
