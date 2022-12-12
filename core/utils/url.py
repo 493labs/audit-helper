@@ -24,4 +24,5 @@ class Chain(Enum):
     CHZ = "https://explorer.chiliz.com/api/eth-rpc", "http://explorer.chiliz.com/api", 999
     # https://docs.step.network/step-network/networks
     STEP = "https://rpc.step.network", "http://stepscan.io/api", 1234
+    ArbitrumOne = "https://arb1.arbitrum.io/rpc","http://api.arbiscan.io/api", 42161
 

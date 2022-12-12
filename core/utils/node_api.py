@@ -8,22 +8,26 @@ from core.utils.url import Chain
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
+# bytes32(uint256(keccak256('eip1967.proxy.admin')) - 1))
+ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
+# bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1))
+IMPL_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+# bytes32(uint256(keccak256('eip1967.proxy.beacon')) - 1))
+BEACON_SLOT = '0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50'
+
 class ReadSlot:
     def __init__(self, chain: Chain) -> None:
         self.w3 = Web3(Web3.HTTPProvider(chain.url))
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     def read_slot(self, contract_addr:str, slot) -> HexBytes:
-        hex_bytes = self.w3.eth.get_storage_at(self.w3.toChecksumAddress(contract_addr), slot)
-        return hex_bytes
+        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(contract_addr), slot)
 
     def read_proxy_impl(self, proxy_addr:str) -> HexBytes:
-        impl_slot = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(proxy_addr), impl_slot)
+        return self.read_slot(proxy_addr, IMPL_SLOT)
 
     def read_proxy_admin(self, proxy_addr:str) -> HexBytes:
-        admin_slot = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
-        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(proxy_addr), admin_slot)
+        return self.read_slot(proxy_addr, ADMIN_SLOT)
 
     def read_by_selector(self, contract_addr:str, method:str) -> HexBytes:
         return self.w3.eth.call({

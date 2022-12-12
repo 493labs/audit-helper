@@ -48,11 +48,12 @@ class StateNode(TokenDecisionNode):
 
             if token_info.is_erc721a and e in [ERC721_E_view.ownerOf, ERC721_E_view.getApproved]:
                 # erc721a 的实现中可能会读取_currentIndex，影响后面的分析
-                states = [s for s in states if s.name != '_currentIndex']
+                states = [s for s in states if s.name not in ['_currentIndex', 'currentIndex'] ]
             if e == ERC721_E_view.getApproved:
                 # 有些erc721实现会先通过ownerOf判断tokenId是否存在，再进一步读取approve
-                owner_state = token_info.state_map[ERC721_E_view.ownerOf]
-                states = [s for s in states if s != owner_state]
+                if ERC721_E_view.ownerOf in token_info.state_map:
+                    owner_state = token_info.state_map[ERC721_E_view.ownerOf]
+                    states = [s for s in states if s != owner_state]
 
             states_count = len(states)            
             if states_count != 1:

@@ -49,9 +49,10 @@ def read_write_check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], Li
 
             # erc721a 的实现中有_currentIndex，影响后续分析
             if token_info.is_erc721a:
-                state = token_info.c.get_state_variable_from_name('_currentIndex')
-                if state:
-                    states_read.append(state)
+                for ignore in ['_currentIndex', 'currentIndex']:
+                    state = token_info.c.get_state_variable_from_name(ignore)
+                    if state:
+                        states_read.append(state)
 
         layerouts.extend(func_only_op_state(f, READ_FLAG, states_read))
         layerouts.extend(func_only_op_state(f, WRITE_FLAG, states_write))

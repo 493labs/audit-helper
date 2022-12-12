@@ -5,6 +5,7 @@ sys.path.append('.')
 from core.utils.url import Chain
 from core.utils.scan_api import get_sli_c_by_addr,download
 from core.token.check_frame import token_decision
+from core.token.base_node import rank_layerouts
 
 DOWNLOAD = 'download'
 
@@ -18,7 +19,7 @@ def handle(config: ConfigParser):
     if config.getboolean(DOWNLOAD, 'with_token_check'):
         c = get_sli_c_by_addr(chain, token_address)
         layerouts = token_decision(on_chain=True, chain=chain, address=token_address, c=c)
-        for layerout in sorted(layerouts):
+        for layerout in rank_layerouts(layerouts):
             print(layerout)
     else:
         download(chain, token_address)
