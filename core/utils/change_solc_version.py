@@ -31,7 +31,10 @@ def change_solc_version(sol_path:str):
                 line = line[6:].strip()
                 if line.startswith('solidity'):
                     line = line[8:-1].strip()
-                    break
+                    if line[0] == '=':
+                        # 处理 uni v2 pair 中的"pragma solidity =0.5.16;"情况
+                        line = line[1:]
+                        break
         print(f'需要solc版本：{line}')
         # 1. pragma solidity 0.6.9;
         # 2. pragma solidity ^0.6.9;
