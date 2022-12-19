@@ -46,7 +46,7 @@ class DecisionNode(metaclass=ABCMeta):
         while parent:
             all_layerouts = parent.layerouts + all_layerouts
             parent = parent.parent
-        return all_layerouts 
+        return all_layerouts + [Fore.RESET]
         
     @abstractmethod
     def check(self, contract_info:ContractInfo) -> NodeReturn:
