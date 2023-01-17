@@ -68,5 +68,5 @@ class OverflowNode(TokenDecisionNode):
                 self.add_info('溢出检查未发现异常')
             else:
                 for node in set(nodes_have_risk):
-                    self.add_warns(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
+                    self.add_warn(f'{node.function.canonical_name}:{node.expression}具有溢出风险')
         return NodeReturn.branch0
