@@ -141,3 +141,6 @@ sols
 # ide
 .idea
 entry/*.ini
+
+.vscode
+.DS_Store
