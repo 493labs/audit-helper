@@ -7,7 +7,6 @@ from mythril.solidity.soliditycontract import SolidityContract
 from mythril.laser.ethereum.transaction.symbolic import ACTORS
 
 import os
-from typing import Tuple
 
 from bytecode.exec import exec
 from core.utils.change_solc_version import change_solc_version
@@ -24,7 +23,6 @@ def get_contract(solc_dir:str, contract_path:str, contract_name:str=None)->Solid
         contract = SolidityContract(contract_path, contract_name)
     return contract
 
-def deploy_contract(deployed_code:str)->Tuple[WorldState, Account]:
     world_state = WorldState()
     creator = Account(hex(ACTORS.creator.value))
     attacker = Account(hex(ACTORS.attacker.value))
