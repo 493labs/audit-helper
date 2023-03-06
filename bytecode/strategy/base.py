@@ -9,7 +9,7 @@ from typing import Tuple,List,Callable
 
 from bytecode.exec import exec
 
-from bytecode.annotation.loop_check import LoopCheckAnnotation, loop_check_pre_hook
+from bytecode.annotation.loop_check import LoopCheckAnnotation, loop_check_pre_hook, loop_check_post_hook, LoopSignal
 from bytecode.annotation.state_trace import StateTraceAnnotation, state_trace_pre_hook
 
 from mythril.support.model import get_model
@@ -39,6 +39,24 @@ def deploy_contract(deployed_code:str)->Tuple[WorldState, Account]:
     assert len(global_states_final) == 1
     return global_states_final[0].world_state, transaction.callee_account
 
+def loop_check(deployed_code:str)->bool:
+    world_state, caller_account = deploy_contract(deployed_code)
+    transaction = MessageCallTransaction(
+        world_state = world_state,
+        gas_limit=8000000,
+        origin=ACTORS.attacker,
+        caller=ACTORS.attacker,
+        callee_account=caller_account
+    )
+    global_state = transaction.initial_global_state()
+    global_state.transaction_stack.append((transaction,None))
+    global_state.annotate(LoopCheckAnnotation())
+    try:
+        exec(global_state,[loop_check_pre_hook],[loop_check_post_hook])
+    except LoopSignal:
+        return True
+    return False
+
 def global_state_handle(world_state, caller_account, opcode:str, handle:Callable[[GlobalState],None])->List[GlobalState]:
     transaction = MessageCallTransaction(
         world_state = world_state,
@@ -51,7 +69,7 @@ def global_state_handle(world_state, caller_account, opcode:str, handle:Callable
     global_state.transaction_stack.append((transaction,None))
     global_state.annotate(LoopCheckAnnotation())
     global_state.annotate(StateTraceAnnotation([opcode]))
-    global_states_final = exec(global_state,[loop_check_pre_hook,state_trace_pre_hook])
+    global_states_final = exec(global_state,[loop_check_pre_hook,state_trace_pre_hook],[loop_check_post_hook])
     for global_state_final in global_states_final:
         for annotation in global_state_final.get_annotations(StateTraceAnnotation):
             anno:StateTraceAnnotation = annotation
