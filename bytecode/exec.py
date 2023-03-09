@@ -9,8 +9,8 @@ from mythril.laser.ethereum.instruction_data import get_required_stack_elements
 from mythril.laser.ethereum.state.constraints import Constraints
 
 from mythril.laser.smt import Bool, Or, symbol_factory, Solver, is_true
-import z3
-solver = Solver()
+from mythril.support.model import get_model
+from mythril.exceptions import UnsatError
 
 from eth_utils.abi import function_signature_to_4byte_selector
 
@@ -18,13 +18,16 @@ from typing import List, Tuple, Mapping, Callable
 import logging
 
 from bytecode.instrction import Instruction
+from bytecode.annotation.loop_check import LoopSignal
 
 def jumpi_filter(global_state:GlobalState)->bool:
-    solver.reset()
-    solver.add(*(global_state.world_state.constraints))
-    return z3.sat == solver.check()
+    try: 
+        get_model(tuple(global_state.world_state.constraints),solver_timeout=500)
+    except UnsatError:
+        return False
+    return True
 
-def state_exec(global_state_cur: GlobalState, pre_hooks: List[Callable]=None, post_hooks: List[Callable]=None) -> Tuple[List[GlobalState], List[GlobalState], Instruction]: 
+def state_exec(global_state_cur: GlobalState, pre_hooks: List[Callable]=None, post_hooks: List[Callable]=None, ingore_loop:bool=True) -> Tuple[List[GlobalState], List[GlobalState], Instruction]: 
     instructions = global_state_cur.environment.code.instruction_list
     try:
         instruction = instructions[global_state_cur.mstate.pc]
@@ -44,6 +47,13 @@ def state_exec(global_state_cur: GlobalState, pre_hooks: List[Callable]=None, po
     except VmException:
         logging.error(f'{global_state_cur.current_transaction} -> {instruction} -> 虚拟机异常')
         return [], [], instruction
+    except LoopSignal:
+        if ingore_loop:
+            logging.debug(f'{global_state_cur.current_transaction} -> {instruction} -> 出现了循环')
+            return [], [], instruction
+        else:
+            # 用于对循环场景进行测试
+            raise LoopSignal
     except TransactionStartSignal:
         return [], [], instruction
     except TransactionEndSignal as end_signal:
@@ -56,13 +66,13 @@ def state_exec(global_state_cur: GlobalState, pre_hooks: List[Callable]=None, po
 
     return new_global_states, [], instruction
 
-def exec(start_state: GlobalState, pre_hooks: List[Callable]=None, post_hooks: List[Callable]=None) -> List[GlobalState]:
+def tx_exec(start_state: GlobalState, pre_hooks: List[Callable]=None, post_hooks: List[Callable]=None, ingore_loop:bool=True) -> List[GlobalState]:
     states_queue = [start_state]
     states_final = []
     while len(states_queue) > 0:
         global_state_cur = states_queue.pop(0)
 
-        new_states_queue, new_states_final, _ = state_exec(global_state_cur, pre_hooks, post_hooks)
+        new_states_queue, new_states_final, _ = state_exec(global_state_cur, pre_hooks, post_hooks, ingore_loop)
         states_final.extend(new_states_final)
         # 深度优先
         states_queue = new_states_queue + states_queue
