@@ -1539,6 +1539,9 @@ class Instruction:
             )
 
         new_state = copy(global_state)
+        # new_state = global_state
+        # 不能少了copy，否则无法正常进行循环检查，暂不清楚原因
+
         # add JUMP gas cost
         min_gas, max_gas = get_opcode_gas("JUMP")
         new_state.mstate.min_gas_used += min_gas

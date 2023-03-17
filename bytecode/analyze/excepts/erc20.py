@@ -1,0 +1,3 @@
+
+class NoTransferLog(Exception):
+    pass

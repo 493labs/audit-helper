@@ -1,0 +1,3 @@
+
+class NoFinalState(Exception):
+    pass

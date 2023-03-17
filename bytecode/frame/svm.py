@@ -7,6 +7,7 @@ from mythril.laser.ethereum.transaction import ContractCreationTransaction, Mess
 
 from mythril.laser.ethereum.evm_exceptions import VmException
 from mythril.laser.ethereum.instruction_data import get_required_stack_elements
+from mythril.laser.ethereum.time_handler import time_handler
 from mythril.disassembler.disassembly import Disassembly
 
 from mythril.laser.smt import symbol_factory
@@ -33,18 +34,36 @@ class SVM:
     def __init__(self):
         self.inst_pre_hooks:List[Callable[[GlobalState],None]] = []
         self.inst_post_hooks:List[Callable[[GlobalState],None]] = []
+        self.final_state_hooks:List[Callable[[GlobalState],None]] = []
         self.tx_exec_paths:List[List] = []
 
-    def exec(self, code:str, opcodes_trace:List[str], inject_annotations:List[Callable], ingore_loop:bool=True)->List[GlobalState]:
+    def loop_check(self, disassembly:Disassembly) -> bool:
+        try:
+            self.exec(disassembly, ingore_loop=False)
+        except LoopSignal:
+            return True
+        return False
+
+    def exec(
+            self, 
+            disassembly:Disassembly, 
+            identifier:str = None,
+            call_data = None,
+            opcodes_trace:List[str] = None, 
+            inject_annotations:List[Callable] = None, 
+            ingore_loop:bool=True
+    )->List[GlobalState]:
         world_state = get_base_world_state()
-        caller_account = Account(address=symbol_factory.BitVecVal(10,256),code=Disassembly(code))
+        caller_account = Account(address=symbol_factory.BitVecVal(10,256),code=disassembly)
         world_state.put_account(caller_account)
         transaction = MessageCallTransaction(
             world_state = world_state,
+            identifier = identifier,
             gas_limit=8000000,
             origin=ACTORS.attacker,
             caller=ACTORS.attacker,
-            callee_account=caller_account
+            callee_account=caller_account,
+            call_data = call_data
         )
         start_state = transaction.initial_global_state()
         start_state.transaction_stack.append((transaction,None))
@@ -52,13 +71,14 @@ class SVM:
         inject_loop_check(self, start_state)
         inject_instruction_trace(self, start_state)
         inject_state_trace(self, start_state, opcodes_trace)
-        for inject_annotation in inject_annotations:
+        for inject_annotation in inject_annotations or []:
             inject_annotation(self, start_state)
         return self.tx_exec(start_state,ingore_loop)
 
     def tx_exec(self, start_state: GlobalState, ingore_loop:bool=True) -> List[GlobalState]:
         states_queue = [start_state]
         states_final = []
+        time_handler.start_execution(60)
         while len(states_queue) > 0:
             global_state_cur = states_queue.pop(0)
 
@@ -82,11 +102,6 @@ class SVM:
             logging.error(f'{global_state_cur.current_transaction} -> {instruction} -> 操作码所需stack长度不足')
             return [], []
 
-        # 增加jump(i)指令的dest信息
-        # bug: 可能会重复赋值
-        # if instruction['opcode'] in ['JUMP','JUMPI']:
-        #     instruction['dest'] = global_state_cur.mstate.stack[-1].value
-
         try:
             new_global_states = Instruction(
                 op_code, None, self.inst_pre_hooks, self.inst_post_hooks).evaluate(global_state_cur)
@@ -106,6 +121,8 @@ class SVM:
         except TransactionEndSignal as end_signal:
             self.tx_exec_paths.append(get_instruction_trace(end_signal.global_state))
             if not end_signal.revert:
+                for final_state_hook in self.final_state_hooks:
+                    final_state_hook(end_signal.global_state)
                 return [], [end_signal.global_state]
             return [], []
         
@@ -113,6 +130,9 @@ class SVM:
             new_global_states = list(filter(jumpi_filter, new_global_states))
 
         return new_global_states, []
+    
+    def inject_final_state_hook(self, final_state_hook):
+        self.final_state_hooks.append(final_state_hook)
 
 def jumpi_filter(global_state:GlobalState)->bool:
     try: 

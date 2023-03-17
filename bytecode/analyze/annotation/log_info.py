@@ -8,7 +8,7 @@ from copy import copy, deepcopy
 
 from eth_utils.crypto import keccak
 
-from bytecode.annotation.base import get_first_annotation
+from bytecode.frame.annotation.base import get_first_annotation
 
 # event Transfer(address indexed from, address indexed to, uint256 value);
 TOP0 = keccak(text='Transfer(address,address,uint256)')
@@ -47,3 +47,7 @@ def transfer_log_pre_hook(global_state:GlobalState):
             transfer_log = TransferLog(stack[-4], stack[-5], global_state.mstate.memory.get_word_at(offset))
             annotation:TransferLogAnnotation = get_first_annotation(global_state, TransferLogAnnotation)
             annotation.transfer_logs.append(transfer_log)
+
+def inject_transfer_log_info(svm, global_state:GlobalState):
+    global_state.annotate(TransferLogAnnotation())
+    svm.inst_pre_hooks.append(transfer_log_pre_hook)
