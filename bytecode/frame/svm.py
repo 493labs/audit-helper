@@ -16,6 +16,7 @@ from mythril.exceptions import UnsatError
 
 from typing import List, Tuple, Mapping, Callable
 import logging
+from copy import copy, deepcopy
 
 from bytecode.frame.instrction import Instruction
 from bytecode.frame.annotation.loop_check import LoopSignal, inject_loop_check
@@ -47,38 +48,53 @@ class SVM:
     def exec(
             self, 
             disassembly:Disassembly, 
+            concrete_storage: bool = False,
             identifier:str = None,
+            transaction_count:int = 1,
             call_data = None,
+            init_constraints = None,
             opcodes_trace:List[str] = None, 
             inject_annotations:List[Callable] = None, 
             ingore_loop:bool=True
-    )->List[GlobalState]:
+    ) -> List[GlobalState]:
         world_state = get_base_world_state()
-        caller_account = Account(address=symbol_factory.BitVecVal(10,256),code=disassembly)
+        caller_account = Account(address=symbol_factory.BitVecVal(10,256), code=disassembly, concrete_storage=concrete_storage)
         world_state.put_account(caller_account)
-        transaction = MessageCallTransaction(
-            world_state = world_state,
-            identifier = identifier,
-            gas_limit=8000000,
-            origin=ACTORS.attacker,
-            caller=ACTORS.attacker,
-            callee_account=caller_account,
-            call_data = call_data
-        )
-        start_state = transaction.initial_global_state()
-        start_state.transaction_stack.append((transaction,None))
 
-        inject_loop_check(self, start_state)
-        inject_instruction_trace(self, start_state)
-        inject_state_trace(self, start_state, opcodes_trace)
-        for inject_annotation in inject_annotations or []:
-            inject_annotation(self, start_state)
-        return self.tx_exec(start_state,ingore_loop)
+        open_states = [world_state]
+        final_global_states = []
+        for _ in range(transaction_count):
+            temp_open_states = open_states
+            open_states = []
+            for open_state in temp_open_states:          
+                transaction = MessageCallTransaction(
+                    world_state = deepcopy(open_state),
+                    identifier = identifier,
+                    gas_limit=8000000,
+                    origin=ACTORS.attacker,
+                    caller=ACTORS.attacker,
+                    callee_account=caller_account,
+                    call_data = call_data
+                )
+                start_state = transaction.initial_global_state()
+                start_state.transaction_stack.append((transaction,None))
+                if init_constraints:
+                    start_state.world_state.constraints = init_constraints
+
+                inject_loop_check(self, start_state)
+                inject_instruction_trace(self, start_state)
+                inject_state_trace(self, start_state, opcodes_trace)
+                for inject_annotation in inject_annotations or []:
+                    inject_annotation(self, start_state)
+                step_global_states = self.tx_exec(start_state,ingore_loop)
+                open_states.extend([global_state.world_state for global_state in step_global_states])
+                final_global_states.extend(step_global_states)
+        return final_global_states
 
     def tx_exec(self, start_state: GlobalState, ingore_loop:bool=True) -> List[GlobalState]:
         states_queue = [start_state]
         states_final = []
-        time_handler.start_execution(60)
+        time_handler.start_execution(100)
         while len(states_queue) > 0:
             global_state_cur = states_queue.pop(0)
 
@@ -116,7 +132,7 @@ class SVM:
                 # 用于对循环场景进行测试
                 raise LoopSignal
         except TransactionStartSignal:
-            logging.debug(f'{global_state_cur.current_transaction} -> {instruction} -> 出现了外部调用')
+            logging.info(f'{global_state_cur.current_transaction} -> {instruction} -> 出现了外部调用')
             return [], []
         except TransactionEndSignal as end_signal:
             self.tx_exec_paths.append(get_instruction_trace(end_signal.global_state))
@@ -131,8 +147,15 @@ class SVM:
 
         return new_global_states, []
     
-    def inject_final_state_hook(self, final_state_hook):
-        self.final_state_hooks.append(final_state_hook)
+    def add_inst_pre_hook(self, inst_pre_hook:Callable[[GlobalState],None]):
+        if inst_pre_hook not in self.inst_pre_hooks:
+            self.inst_pre_hooks.append(inst_pre_hook)
+    def add_inst_post_hook(self, inst_post_hook:Callable[[GlobalState],None]):
+        if inst_post_hook not in self.inst_post_hooks:
+            self.inst_post_hooks.append(inst_post_hook)
+    def inject_final_state_hook(self, final_state_hook:Callable[[GlobalState],None]):
+        if final_state_hook not in self.final_state_hooks:
+            self.final_state_hooks.append(final_state_hook)
 
 def jumpi_filter(global_state:GlobalState)->bool:
     try: 

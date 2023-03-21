@@ -27,7 +27,7 @@ def state_trace_pre_hook(global_state:GlobalState):
 
 def inject_state_trace(svm, global_state:GlobalState, opcodes:List[str] = None):
     global_state.annotate(StateTraceAnnotation(watch_list=opcodes))
-    svm.inst_pre_hooks.append(state_trace_pre_hook)
+    svm.add_inst_pre_hook(state_trace_pre_hook)
 
 def get_state_trace(global_state:GlobalState, opcode:str)->List[GlobalState]:
     for annotation in global_state.get_annotations(StateTraceAnnotation):

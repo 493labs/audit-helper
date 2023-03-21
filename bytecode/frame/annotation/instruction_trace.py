@@ -71,10 +71,11 @@ def instruction_trace_pre_hook(global_state:GlobalState):
         
 def inject_instruction_trace(svm, global_state:GlobalState):
     global_state.annotate(InstrutionTraceAnnotation())
-    svm.inst_pre_hooks.append(instruction_trace_pre_hook)
+    svm.add_inst_pre_hook(instruction_trace_pre_hook)
 
 def get_instruction_trace(global_state:GlobalState)->List:
     annotation:InstrutionTraceAnnotation = get_first_annotation(global_state, InstrutionTraceAnnotation)
     if annotation:
         return annotation.instrs
+    return None
     

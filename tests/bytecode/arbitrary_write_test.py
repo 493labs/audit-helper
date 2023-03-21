@@ -10,4 +10,4 @@ def test_arbitrary_write_check():
     time_handler.start_execution(60)
     assert arbitrary_write_check(solidity_contract.creation_code) == True
 
-test_arbitrary_write_check()
+# test_arbitrary_write_check()

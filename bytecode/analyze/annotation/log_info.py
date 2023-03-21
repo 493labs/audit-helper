@@ -50,4 +50,4 @@ def transfer_log_pre_hook(global_state:GlobalState):
 
 def inject_transfer_log_info(svm, global_state:GlobalState):
     global_state.annotate(TransferLogAnnotation())
-    svm.inst_pre_hooks.append(transfer_log_pre_hook)
+    svm.add_inst_pre_hook(transfer_log_pre_hook)

@@ -79,5 +79,5 @@ class CFG:
             edge.node_from.inject(g, self.disassembly)
             edge.node_to.inject(g, self.disassembly)
             g.edge(edge.node_from.uid, edge.node_to.uid)
-        g.render(view=True)
+        g.render(view=True,directory='test/data')
 

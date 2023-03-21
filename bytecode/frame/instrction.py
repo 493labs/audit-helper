@@ -2147,6 +2147,9 @@ class Instruction:
         if native_result:
             return native_result
         self._write_symbolic_returndata(global_state,memory_out_offset,memory_out_size)
+        global_state.mstate.stack.append(
+            global_state.new_bitvec("retval_" + str(instr["address"]), 256)
+        )
         return [global_state]
         # transaction = MessageCallTransaction(
         #     world_state=global_state.world_state,
@@ -2322,7 +2325,7 @@ class Instruction:
         return [global_state]
 
     @StateTransition()
-    def delegatecall_(self, global_state: GlobalState) -> List[GlobalState]:
+    def delegatecall_bak(self, global_state: GlobalState) -> List[GlobalState]:
         """
 
         :param global_state:
@@ -2389,6 +2392,82 @@ class Instruction:
             static=environment.static,
         )
         raise TransactionStartSignal(transaction, self.op_code, global_state)
+    
+    @StateTransition()
+    def delegatecall_(self, global_state: GlobalState) -> List[GlobalState]:
+        """
+
+        :param global_state:
+        :return:
+        """
+        instr = global_state.get_current_instruction()
+        environment = global_state.environment
+        memory_out_size, memory_out_offset = global_state.mstate.stack[-6:-4]
+
+        try:
+            (
+                callee_address,
+                callee_account,
+                call_data,
+                value,
+                gas,
+                _,
+                _,
+            ) = get_call_parameters(global_state, self.dynamic_loader)
+
+            if callee_account is not None and callee_account.code.bytecode == "":
+                log.debug("The call is related to ether transfer between accounts")
+                sender = global_state.environment.active_account.address
+                receiver = callee_account.address
+
+                transfer_ether(global_state, sender, receiver, value)
+                self._write_symbolic_returndata(
+                    global_state, memory_out_offset, memory_out_size
+                )
+                global_state.mstate.stack.append(
+                    global_state.new_bitvec("retval_" + str(instr["address"]), 256)
+                )
+                return [global_state]
+        except ValueError as e:
+            log.debug(
+                "Could not determine required parameters for call, putting fresh symbol on the stack. \n{}".format(
+                    e
+                )
+            )
+            self._write_symbolic_returndata(
+                global_state, memory_out_offset, memory_out_size
+            )
+            global_state.mstate.stack.append(
+                global_state.new_bitvec("retval_" + str(instr["address"]), 256)
+            )
+            return [global_state]
+
+        native_result = native_call(
+            global_state, callee_address, call_data, memory_out_offset, memory_out_size
+        )
+        if native_result:
+            return native_result
+
+        # transaction = MessageCallTransaction(
+        #     world_state=global_state.world_state,
+        #     gas_price=environment.gasprice,
+        #     gas_limit=gas,
+        #     origin=environment.origin,
+        #     code=callee_account.code,
+        #     caller=environment.sender,
+        #     callee_account=environment.active_account,
+        #     call_data=call_data,
+        #     call_value=environment.callvalue,
+        #     static=environment.static,
+        # )
+        # raise TransactionStartSignal(transaction, self.op_code, global_state)
+        self._write_symbolic_returndata(
+            global_state, memory_out_offset, memory_out_size
+        )
+        global_state.mstate.stack.append(
+            global_state.new_bitvec("retval_" + str(instr["address"]), 256)
+        )
+        return [global_state]
 
     @StateTransition()
     def delegatecall_post(self, global_state: GlobalState) -> List[GlobalState]:
@@ -2596,6 +2675,9 @@ class Instruction:
             return native_result
         
         self._write_symbolic_returndata(global_state,memory_out_offset,memory_out_size)
+        global_state.mstate.stack.append(
+            global_state.new_bitvec("retval_" + str(instr["address"]), 256)
+        )
         return [global_state]
         # transaction = MessageCallTransaction(
         #     world_state=global_state.world_state,
