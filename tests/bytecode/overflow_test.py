@@ -1,6 +1,6 @@
 import sys
 sys.path.append('.')
-from bytecode.util import get_contract
+from bytecode.util.solidity import get_contract
 from bytecode.analyze.overflow import overflow_check
 
 def test_overflow_check():

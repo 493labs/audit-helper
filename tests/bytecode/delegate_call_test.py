@@ -1,6 +1,6 @@
 import sys
 sys.path.append('.')
-from bytecode.util import get_contract
+from bytecode.util.solidity import get_contract
 from bytecode.analyze.delegate_call import arbitrary_delegate_call
 
 def test_delegate_call_simple():

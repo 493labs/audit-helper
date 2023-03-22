@@ -1,6 +1,6 @@
 import sys
 sys.path.append('.')
-from bytecode.util import get_contract
+from bytecode.util.solidity import get_contract
 from bytecode.analyze.arbitrary_write import arbitrary_write_check
 
 from mythril.laser.ethereum.time_handler import time_handler

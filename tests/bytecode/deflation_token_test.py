@@ -1,6 +1,6 @@
 import sys
 sys.path.append('.')
-from bytecode.util import get_contract
+from bytecode.util.solidity import get_contract
 
 from bytecode.analyze.deflation_token import deflation_token_check
 
