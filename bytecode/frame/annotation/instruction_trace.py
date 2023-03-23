@@ -63,8 +63,8 @@ def instruction_trace_pre_hook(global_state:GlobalState):
             if memory_input_offset.symbolic or memory_input_size.symbolic:
                 instr['to.func'] = 'symbolic'
             else:
-                assert memory_input_size.value >= 4
-                to_func = global_state.mstate.memory[memory_input_offset:memory_input_offset+4]
+                size = 4 if memory_input_size.value >= 4 else memory_input_size.value
+                to_func = global_state.mstate.memory[memory_input_offset:memory_input_offset+size]
                 instr['to.func'] = '0x' + bytes([get_concrete_int(item) for item in to_func]).hex()
         annotation.instrs.append(instr)
 
