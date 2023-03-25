@@ -5,15 +5,16 @@ from mythril.laser.ethereum.state.annotation import StateAnnotation
 from bytecode.frame.annotation.base import get_first_annotation
 
 class LoopCheckAnnotation(StateAnnotation):
-    def __init__(self, loop_bound:int, op_trace = None):
+    def __init__(self, loop_bound:int, op_trace = None, jumpdest_to_indexs = None):
         self.op_trace:List[int] = op_trace or []
+        self.jumpdest_to_indexs:Mapping[int,List[int]] = jumpdest_to_indexs or {}
         self.loop_bound = loop_bound
 
     def __copy__(self):
-        return LoopCheckAnnotation(copy(self.loop_bound), copy(self.op_trace))
+        return LoopCheckAnnotation(copy(self.loop_bound), copy(self.op_trace), copy(self.jumpdest_to_indexs))
 
     def __deepcopy__(self, _):
-        return LoopCheckAnnotation(deepcopy(self.loop_bound), deepcopy(self.op_trace))
+        return LoopCheckAnnotation(deepcopy(self.loop_bound), deepcopy(self.op_trace), deepcopy(self.jumpdest_to_indexs))
 
 
 class LoopSignal(Exception):
@@ -61,7 +62,23 @@ def loop_check_pre_hook(global_state: GlobalState):
     annotation.op_trace.append(cur_instr['address'])
     if cur_instr['opcode'].upper() != 'JUMPDEST':
         return
-    count = get_loop_count(annotation.op_trace)
+    
+    if cur_instr['address'] not in annotation.jumpdest_to_indexs:
+        annotation.jumpdest_to_indexs[cur_instr['address']] = [len(annotation.op_trace)-1]
+        return
+    found = False
+    for i in annotation.jumpdest_to_indexs[cur_instr['address']][::-1]:
+        if annotation.op_trace[i-1] == annotation.op_trace[-2]:
+            found = True
+            break
+    if not found:
+        annotation.jumpdest_to_indexs[cur_instr['address']].append(len(annotation.op_trace)-1)
+        return
+    key = calculate_hash(i, len(annotation.op_trace) - 1, annotation.op_trace)
+    size = len(annotation.op_trace) - i - 1
+    count = count_key(annotation.op_trace, key, i, size)
+    # count = get_loop_count(annotation.op_trace)
+    
     if count > annotation.loop_bound:
         raise LoopSignal
         
