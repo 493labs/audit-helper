@@ -1496,7 +1496,10 @@ class Instruction:
 
         state = global_state.mstate
         index = state.stack.pop()
-        state.stack.append(global_state.environment.active_account.storage[index])
+        slot_content = global_state.environment.active_account.storage[index]
+        from .annotation.smt.bitvec_info import BitvecInfoType, BitvecSourceType
+        slot_content.annotate((BitvecInfoType.SourceInfo, BitvecSourceType.Storage, index))
+        state.stack.append(slot_content)
         return [global_state]
 
     @StateTransition(is_state_mutation_instruction=True)

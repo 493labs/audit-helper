@@ -10,7 +10,7 @@ from mythril.laser.ethereum.instruction_data import get_required_stack_elements
 from mythril.laser.ethereum.time_handler import time_handler
 from mythril.disassembler.disassembly import Disassembly
 
-from mythril.laser.smt import symbol_factory
+from mythril.laser.smt import symbol_factory, Bool, Or, And
 from mythril.support.model import get_model
 from mythril.exceptions import UnsatError
 
@@ -22,6 +22,7 @@ from bytecode.frame.instrction import Instruction
 from bytecode.frame.annotation.loop_check import LoopSignal, inject_loop_check
 from bytecode.frame.annotation.instruction_trace import inject_instruction_trace, get_instruction_trace
 from bytecode.frame.annotation.state_trace import inject_state_trace
+from .annotation.sstore_record import inject_sstore_record, get_sstore_records
 
 def get_base_world_state()->WorldState:
     world_state = WorldState()
@@ -89,6 +90,69 @@ class SVM:
                 step_global_states = self.tx_exec(start_state,ingore_loop)
                 open_states.extend([global_state.world_state for global_state in step_global_states])
                 final_global_states.extend(step_global_states)
+        return final_global_states
+    
+    def exec_liner(
+            self, 
+            disassembly:Disassembly, 
+            concrete_storage: bool = True,
+            # identifier:str = None,
+            # transaction_count:int = 2,
+            # call_data = None,
+            # init_constraints = None,
+            opcodes_trace:List[str] = None, 
+            inject_annotations:List[Callable] = None, 
+            ingore_loop:bool=True
+    ) -> List[GlobalState]:
+        world_state = get_base_world_state()
+        caller_account = Account(address=symbol_factory.BitVecVal(10,256), code=disassembly, concrete_storage=concrete_storage)
+        world_state.put_account(caller_account)
+
+        final_global_states = []
+        # 限定两次交易，线性模式无法处理超过两次交易的情况
+        for _ in range(2): 
+            open_state = deepcopy(world_state) 
+            transaction = MessageCallTransaction(
+                world_state = open_state,
+                # identifier = identifier,
+                gas_limit=8000000,
+                origin=ACTORS.attacker,
+                caller=ACTORS.attacker,
+                callee_account=caller_account,
+                # call_data = call_data
+            )
+            start_state = transaction.initial_global_state()
+            start_state.transaction_stack.append((transaction,None))
+
+            or_contraints = Bool(False)
+            need_the_contraints = False
+            for final_global_state in final_global_states:
+                sstore_records = get_sstore_records(final_global_state) 
+                if not sstore_records:
+                    continue
+                if not need_the_contraints:
+                    need_the_contraints = True
+
+                and_contraint = Bool(True)
+                for address, key_values in sstore_records.items():
+                    accout = open_state.accounts_exist_or_load(address,None)
+                    for key, value in key_values.items():
+                        assert not key.symbolic
+                        if key not in accout.storage.keys_set:
+                            accout.storage[key] = symbol_factory.BitVecSym(f'storage_{address}_{key.value}',256)
+                        and_contraint = And(and_contraint,accout.storage[key] == value)
+                or_contraints = Or(or_contraints, and_contraint)
+            if need_the_contraints:
+                start_state.world_state.constraints.append(or_contraints)
+
+            inject_loop_check(self, start_state)
+            inject_instruction_trace(self, start_state)
+            inject_state_trace(self, start_state, opcodes_trace)
+            inject_sstore_record(self, start_state)
+            for inject_annotation in inject_annotations or []:
+                inject_annotation(self, start_state)
+            # 只针对两次交易的情况
+            final_global_states.extend(self.tx_exec(start_state,ingore_loop))
         return final_global_states
 
     def tx_exec(self, start_state: GlobalState, ingore_loop:bool=True) -> List[GlobalState]:
