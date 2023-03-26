@@ -1497,8 +1497,8 @@ class Instruction:
         state = global_state.mstate
         index = state.stack.pop()
         slot_content = global_state.environment.active_account.storage[index]
-        from .annotation.smt.bitvec_info import BitvecInfoType, BitvecSourceType
-        slot_content.annotate((BitvecInfoType.SourceInfo, BitvecSourceType.Storage, index))
+        # from .annotation.smt.bitvec_info import BitvecInfoType, BitvecSourceType
+        # slot_content.annotate((BitvecInfoType.SourceInfo, BitvecSourceType.Storage, index))
         state.stack.append(slot_content)
         return [global_state]
 
