@@ -152,7 +152,11 @@ class SVM:
             for inject_annotation in inject_annotations or []:
                 inject_annotation(self, start_state)
             # 只针对两次交易的情况
-            final_global_states.extend(self.tx_exec(start_state,ingore_loop))
+            step_final_states = self.tx_exec(start_state, ingore_loop)
+            final_global_states.extend(step_final_states)
+            
+            if len(step_final_states) == 0 or not any([get_sstore_records(state) for state in step_final_states]):
+                break
         return final_global_states
 
     def tx_exec(self, start_state: GlobalState, ingore_loop:bool=True) -> List[GlobalState]:

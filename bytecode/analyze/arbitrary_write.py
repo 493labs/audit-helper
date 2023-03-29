@@ -5,6 +5,7 @@ from mythril.disassembler.disassembly import Disassembly
 from bytecode.frame.annotation.state_trace import StateTraceAnnotation
 from bytecode.frame.annotation.base import get_first_annotation
 from bytecode.analyze.excepts.base import NoFinalState
+from bytecode.support.analyze_result import analyze_use_db, DB_FLAG
 from bytecode.frame.svm import SVM
 
 class Complete(Exception):
@@ -12,6 +13,8 @@ class Complete(Exception):
 
 def final_state_hook(final_state:GlobalState):
     annotation:StateTraceAnnotation = get_first_annotation(final_state, StateTraceAnnotation)
+    if not annotation:
+        return
     if 'SSTORE' in annotation.state_trace:
         trace_states = annotation.state_trace['SSTORE']
         for trace_state in trace_states:
@@ -23,7 +26,8 @@ def final_state_hook(final_state:GlobalState):
             except UnsatError:
                 pass
 
-def arbitrary_write_check(disassembly:Disassembly)->bool:
+@analyze_use_db(key='arbitrary_write_check')
+def arbitrary_write_check(disassembly:Disassembly, db_flag:DB_FLAG = DB_FLAG.NoUse, db = None)->bool:
     svm = SVM()
     svm.inject_final_state_hook(final_state_hook)
     try:
@@ -31,5 +35,6 @@ def arbitrary_write_check(disassembly:Disassembly)->bool:
     except Complete:
         return True
     if len(final_states) == 0:
-        raise NoFinalState
+        return False
+        # raise NoFinalState
     return False

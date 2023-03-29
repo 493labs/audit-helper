@@ -1,9 +1,10 @@
 from mythril.laser.ethereum.state.annotation import StateAnnotation
 from mythril.laser.ethereum.state.global_state import GlobalState
 from mythril.laser.ethereum.call import get_callee_address, get_call_data
-from mythril.laser.ethereum.util import get_concrete_int
+from mythril.laser.ethereum.util import get_concrete_int, concrete_int_from_bytes
 from mythril.disassembler.disassembly import Disassembly
-from typing import List
+from mythril.laser.smt import BitVec
+from typing import List, Optional
 from copy import copy, deepcopy
 
 from bytecode.frame.annotation.base import get_first_annotation
@@ -65,7 +66,16 @@ def instruction_trace_pre_hook(global_state:GlobalState):
             else:
                 size = 4 if memory_input_size.value >= 4 else memory_input_size.value
                 to_func = global_state.mstate.memory[memory_input_offset:memory_input_offset+size]
-                instr['to.func'] = '0x' + bytes([get_concrete_int(item) for item in to_func]).hex()
+                to_func_byte4 = []
+                for item in to_func:
+                    if isinstance(item, BitVec) and item.symbolic:
+                        instr['to.func'] = 'symbolic'
+                        annotation.instrs.append(instr)
+                        return
+                    to_func_byte4.append(get_concrete_int(item))
+                if len(to_func_byte4)<4:
+                    to_func_byte4 = [0]*(4 - len(to_func_byte4)) + to_func_byte4
+                instr['to.func'] = '0x' + bytes(to_func_byte4).hex()
         annotation.instrs.append(instr)
 
         
@@ -73,7 +83,7 @@ def inject_instruction_trace(svm, global_state:GlobalState):
     global_state.annotate(InstrutionTraceAnnotation())
     svm.add_inst_pre_hook(instruction_trace_pre_hook)
 
-def get_instruction_trace(global_state:GlobalState)->List:
+def get_instruction_trace(global_state:GlobalState)-> Optional[List]:
     annotation:InstrutionTraceAnnotation = get_first_annotation(global_state, InstrutionTraceAnnotation)
     if annotation:
         return annotation.instrs

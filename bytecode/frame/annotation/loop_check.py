@@ -11,7 +11,8 @@ class LoopCheckAnnotation(StateAnnotation):
         self.loop_bound = loop_bound
 
     def __copy__(self):
-        return LoopCheckAnnotation(copy(self.loop_bound), copy(self.op_trace), copy(self.jumpdest_to_indexs))
+        # return LoopCheckAnnotation(copy(self.loop_bound), copy(self.op_trace), copy(self.jumpdest_to_indexs))
+        return deepcopy(self)
 
     def __deepcopy__(self, _):
         return LoopCheckAnnotation(deepcopy(self.loop_bound), deepcopy(self.op_trace), deepcopy(self.jumpdest_to_indexs))
