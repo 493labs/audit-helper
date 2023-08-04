@@ -20,12 +20,15 @@ class NodeReturn(Enum):
 class DecisionNode(metaclass=ABCMeta): 
     parent = None
     layerouts:List[str] = None
+    warn_count = 0
     on_chain: bool = False
 
     def add_warns(self, warns:List[str]):
+        self.warn_count += len(warns)
         self.layerouts.extend([Fore.RED + warn for warn in warns])
 
     def add_warn(self, warn:str):
+        self.warn_count += 1
         self.layerouts.append(Fore.RED + warn)
 
     def add_focuss(self, focus_infos:List[str]):
@@ -56,6 +59,7 @@ def generate_node(T:type[DecisionNode], parent:DecisionNode, on_chain:bool):
     node = T()
     node.parent = parent
     node.layerouts = []
+    node.warn_count = 0
     node.on_chain = on_chain
     return node  
 

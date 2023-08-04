@@ -38,7 +38,8 @@ class SourceCode:
         self.chain = chain
         self.addr = addr
         self.code_dir = code_dir
-        self.conf_path = code_dir + '/check.ini'
+        if code_dir:
+            self.conf_path = code_dir + '/check.ini'
 
     def download(self):
         if os.path.exists(self.conf_path):
@@ -128,11 +129,15 @@ class SourceCode:
         return self.get_sli_c(contract_path, contract_name)        
 
     def get_sli_c(self, contract_path:str, contract_name:str)->Contract:
-        raw_dir = os.getcwd()
-        os.chdir(self.code_dir) 
-        change_solc_version(contract_path)
-        sli = Slither(contract_path)
-        os.chdir(raw_dir)        
+        if self.code_dir:
+            raw_dir = os.getcwd()
+            os.chdir(self.code_dir) 
+            change_solc_version(contract_path)
+            sli = Slither(contract_path)
+            os.chdir(raw_dir) 
+        else:
+            change_solc_version(contract_path)
+            sli = Slither(contract_path)       
         
         cs = sli.get_contract_from_name(contract_name)
         assert len(cs) == 1, f'找到 {len(cs)} 个名字为 {contract_name} 的合约'

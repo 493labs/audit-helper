@@ -5,7 +5,8 @@ from slither.core.declarations import Contract
 import sys
 sys.path.append('.')
 from core.visualize.call_graph import CallGraph, View
-from core.general.external_call import ExternalCall
+from core.general.nodes.external_call import ExternalCall
+from core.general.analyze_frame import general_analyze
 from core.utils.change_solc_version import change_solc_version
 
 AUDIT_HELPER = 'audit-helper'
@@ -42,8 +43,10 @@ def audit_helper(config:ConfigParser):
     if config.getboolean(AUDIT_HELPER, 'with_call_graph'):
         call_graph(config, c)
 
-    if config.getboolean(AUDIT_HELPER, 'with_external_call_check'):
-        external_call(config, c)
+    if config.getboolean(AUDIT_HELPER, 'with_general_check'):
+        layerouts = general_analyze(c=c)
+        for layerout in layerouts:
+            print(layerout)
 
 
 
