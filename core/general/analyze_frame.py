@@ -8,7 +8,7 @@ from core.frame.frame import make_decision
 
 from core.frame.contract_info import ContractInfo
 from core.frame.base_node import DecisionNode
-from .tree_config import decision_tree, DangerousOpcodeNode
+from .tree_config import decision_tree, AuthenticationNode
 
 def general_analyze(        
         on_chain: bool=False, 
@@ -16,7 +16,7 @@ def general_analyze(
         address: ChecksumAddress = None, 
         c: Contract=None,
         decision_tree: Mapping[DecisionNode, List[DecisionNode]] = decision_tree,
-        start_node: type[DecisionNode] = DangerousOpcodeNode  
+        start_node: type[DecisionNode] = AuthenticationNode  
     ):
     contract_info = ContractInfo()
     contract_info.chain = chain

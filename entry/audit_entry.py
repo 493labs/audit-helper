@@ -5,7 +5,6 @@ from slither.core.declarations import Contract
 import sys
 sys.path.append('.')
 from core.visualize.call_graph import CallGraph, View
-from core.general.nodes.external_call import ExternalCall
 from core.general.analyze_frame import general_analyze
 from core.utils.change_solc_version import change_solc_version
 
@@ -23,10 +22,6 @@ def call_graph(config:ConfigParser, c:Contract):
             analyze.generate_graph(View.All_Call, True, fname)
     if config.getboolean(AUDIT_HELPER, 'write_read_graph'):
         analyze.gene_wt_graph()
-
-def external_call(config:ConfigParser, c:Contract):
-    ex_call_analyze = ExternalCall(c)
-    ex_call_analyze.find_dangerous_ex_call()
 
 def audit_helper(config:ConfigParser):
     root_path = config.get(AUDIT_HELPER, 'root_path')
