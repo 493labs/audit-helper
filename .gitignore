@@ -147,5 +147,3 @@ entry/*.ini
 .DS_Store
 
 config/
-
-tests/romain-test
