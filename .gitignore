@@ -148,4 +148,4 @@ entry/*.ini
 
 config/
 
-test/romain-test
+tests/romain-test
