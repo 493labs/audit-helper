@@ -25,10 +25,10 @@ def func_only_op_state(f: Function, is_write:bool, states_required: List[StateVa
     ret:List[str] = []
     names = ','.join([state.name for state in surplus_states])
     if names:
-        ret.append(f"{f.full_name} 对 {names} 有意料之外的{'写入' if is_write else '读取'}")
+        ret.append(f"{f.name} 对 {names} 有意料之外的{'写入' if is_write else '读取'}")
     names = ','.join([state.name for state in scarcity_states])
     if names:
-        ret.append(f"{f.full_name} 对 {names} 没有应该有的{'写入' if is_write else '读取'}")
+        ret.append(f"{f.name} 对 {names} 没有应该有的{'写入' if is_write else '读取'}")
     return ret
 
 def read_write_check(token_info:TokenInfo, items:List[Tuple[Enum, List[Enum], List[Enum]]]) -> List[str]:

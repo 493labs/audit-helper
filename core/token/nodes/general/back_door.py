@@ -12,16 +12,16 @@ class BackDoorNode(TokenDecisionNode):
                 # 早期版本，汇编代码以 inline_asm 形式存在
                 for n in f.all_nodes():
                     if n.inline_asm and "delegatecall" in n.inline_asm:
-                        warns.append(f'{f.full_name} 存在 delegatecall 调用')
+                        warns.append(f'{f.name} 存在 delegatecall 调用')
                     if n.inline_asm and "sstore" in n.inline_asm:
-                        warns.append(f'{f.full_name} 存在 sstore 调用')
+                        warns.append(f'{f.name} 存在 sstore 调用')
             else:
                 for ir in f.all_slithir_operations():
                     if isinstance(ir,SolidityCall) and ir.function.name.startswith(("delegatecall","sstore")):
-                        warns.append(f'{f.full_name} 存在 {ir.function.name} 调用')
+                        warns.append(f'{f.name} 存在 {ir.function.name} 调用')
                         
                     if isinstance(ir, LowLevelCall) and ir.function_name == "delegatecall":
-                        warns.append(f'{f.full_name} 存在 delegatecall 调用')
+                        warns.append(f'{f.name} 存在 delegatecall 调用')
         if len(warns) == 0:
             self.add_info('未发现 delegatecall 和 sstore 操作')
         else:

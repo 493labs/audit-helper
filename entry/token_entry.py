@@ -17,6 +17,7 @@ def handle(config: ConfigParser):
     token_address = config.get(DOWNLOAD,'token_address')
 
     if config.getboolean(DOWNLOAD, 'with_token_check'):
+        # 入口contract
         c = get_sli_c_by_addr(chain, token_address)
         layerouts = token_decision(on_chain=True, chain=chain, address=token_address, c=c)
         for layerout in rank_layerouts(layerouts):

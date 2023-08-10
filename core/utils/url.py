@@ -6,13 +6,13 @@ import os
 class Chain(Enum):
     def __new__(cls, url:str, code_url:str, index:int):
         obj = object.__new__(cls)
-        if index == 1:
-            key_file = './conf/key.ini'
+        if index in (1, 5):
+            key_file = os.getcwd() + '/config/key.ini'
             if os.path.exists(key_file):
                 key_conf = ConfigParser()
                 key_conf.read(key_file,encoding='utf-8')
                 url = url + key_conf.get('key','infura_key')
-        obj.url = url        
+        obj.url = url      
         obj.code_url = code_url
         obj._value_ = index
         return obj
@@ -25,4 +25,7 @@ class Chain(Enum):
     # https://docs.step.network/step-network/networks
     STEP = "https://rpc.step.network", "http://stepscan.io/api", 1234
     ArbitrumOne = "https://arb1.arbitrum.io/rpc","http://api.arbiscan.io/api", 42161
-
+    Goerli = "https://goerli.infura.io/v3/", "http://api-goerli.etherscan.io/api", 5
+    Mantle = "https://rpc.mantle.xyz", "https://explorer.mantle.xyz/api", 5000
+    Optimistic = "https://mainnet.optimism.io", "https://api-optimistic.etherscan.io/api", 10
+    

@@ -5,6 +5,7 @@ from core.utils.url import Chain
 
 class ContractInfo:
     c: Contract = None
+    proxy_c: Contract = None
     chain: Chain = None
     address: ChecksumAddress = None
     

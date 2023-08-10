@@ -12,7 +12,7 @@ class MetaTransaction(TokenDecisionNode):
                 fs_have_meta_tr.append(f)
                 
         if fs_have_meta_tr:
-            fnames = ','.join([f.full_name for f in fs_have_meta_tr])
+            fnames = ','.join([f.name for f in fs_have_meta_tr])
             self.add_focus(f'{fnames} 中存在元交易，注意检查 nonce 的使用')
         else:
             self.add_info('未发现存在元交易的情况')

@@ -26,9 +26,9 @@ class CalculationOrder(TokenDecisionNode):
 
                 if len(div_indexs) > 0:
                     if len(mul_indexs) > 0 and mul_indexs[-1] > div_indexs[0]:
-                        warns.append(f'{f.full_name} : {node.expression} 中存在先除后乘，计算出错的风险')
+                        warns.append(f'{f.name} : {node.expression} 中存在先除后乘，计算出错的风险')
                     else:
-                        warns.append(f'{f.full_name} : {node.expression} 中存在除法计算，具有损失精度的风险')
+                        warns.append(f'{f.name} : {node.expression} 中存在除法计算，具有损失精度的风险')
             return warns
 
         warns = []

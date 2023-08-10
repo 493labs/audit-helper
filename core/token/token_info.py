@@ -24,6 +24,11 @@ class ERC20_E_Extend(Enum):
     burnFrom = "burnFrom(address,uint256)"
     increaseAllowance = "increaseAllowance(address,uint256)"
     decreaseAllowance = "decreaseAllowance(address,uint256)"
+    
+@unique
+class ERC20_Event(Enum):
+    tranfer = "Transfer"
+    approval = "Approval"
 
 @unique
 class ERC721_E_view(Enum):
@@ -40,9 +45,20 @@ class ERC721_E_Require(Enum):
     approve = "approve(address,uint256)"
     setApprovalForAll = "setApprovalForAll(address,bool)"
 
+@unique
+class ERC721_E_Extend(Enum):
+    burn = "burn(uint256)"
+    baseuri = "_baseURI()"
+
+@unique
+class ERC721_Event(Enum):
+    tranfer = "Transfer"
+    approval = "Approval"
+    approvalForAll = "ApprovalForAll"
+
 
 class TokenInfo(ContractInfo):
-    proxy_c: Contract = None
+    #proxy_c: Contract = None
     '''
     用于代理模式
     '''

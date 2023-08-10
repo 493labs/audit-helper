@@ -142,5 +142,8 @@ sols
 .idea
 entry/*.ini
 
+
 .vscode
 .DS_Store
+
+config/

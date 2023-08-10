@@ -61,8 +61,16 @@ def change_solc_version(sol_path:str):
 
     # 切换版本
     if  obj_version not in versions or obj_version == '':
-        print("未找到合适的solidity版本，需要先安装，")
-        sys.exit()
+        print("未找到合适的solidity版本，需要先安装")
+        if os.name == 'nt':
+            subprocess.call(f'solc-select install {obj_version}')
+            change_solc_version(sol_path)
+        elif os.name == 'posix':
+            subprocess.call(f'solc-select install {obj_version}', shell=True)
+            change_solc_version(sol_path)
+        else:
+            assert False, f'未知的操作系统类型 {os.name}'
+            sys.exit()
     elif obj_version != cur_version:
         if os.name == 'nt':
             subprocess.call(f'solc-select use {obj_version}')

@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import List
 from core.frame.base_node import DecisionNode, NodeReturn
 from core.frame.contract_info import ContractInfo
-from .token_info import TokenInfo
 from colorama import Fore
 
 def get_risk_level(node: DecisionNode) -> str:
@@ -12,50 +11,6 @@ def get_risk_level(node: DecisionNode) -> str:
         risk_level = 'pre work(H1 H3 H10 H11)'
     elif node_name == 'UnlimitMint':
         risk_level = 'H2 M2'
-    elif node_name == 'TransferOtherNode':
-        risk_level = 'H4'
-    elif node_name == 'RequiredFuncNode':
-        risk_level = 'H5'
-    elif node_name == 'CheatState':
-        risk_level = 'H6'
-    elif node_name == 'FakeRecharge':
-        risk_level = 'H7'
-    elif node_name == 'EventNode':
-        risk_level = 'H7'
-    elif node_name == 'BalanceCheck':
-        risk_level = 'H8'
-    elif node_name == 'ArbitraryMint':
-        risk_level = 'H9'
-    elif node_name == 'OverflowNode':
-        risk_level = 'H12'
-    elif node_name == 'CalculationOrder':
-        risk_level = 'H13 M11'
-    elif node_name == 'RandomCheck':
-        risk_level = 'H14'
-    elif node_name == 'MetaTransaction':
-        risk_level = 'H15'
-    elif node_name == 'ReplayAttack':
-        risk_level = 'H16'
-    elif node_name == 'BackDoorNode':
-        risk_level = 'H17'
-    elif node_name == 'BaseURICheck':
-        risk_level = 'M1'
-    elif node_name == 'PausableCheck':
-        risk_level = 'M3'
-    elif node_name == 'TransferSafeGuardCheck':
-        risk_level = 'M4'
-    elif node_name == 'TransferFeeCheck':
-        risk_level = 'M5 M7'
-    elif node_name == 'BlackWhiteListCheck':
-        risk_level = 'M6'
-    elif node_name == 'TransferRestrictionCheck':
-        risk_level = 'M9'
-    elif node_name == 'NotZeroAddress':
-        risk_level = 'M12'
-    elif node_name == 'SearchIfAndLoop':
-        risk_level = 'other'
-    elif node_name == 'ExternalCallNode':
-        risk_level = 'other'
     return f'[{risk_level}] '
 
 def rank_layerouts(layerouts: List[str]) -> List[str]:
@@ -68,7 +23,7 @@ def rank_layerouts(layerouts: List[str]) -> List[str]:
             other_layerouts.append(layerout)
     return pre_work_layerouts + sorted(other_layerouts)
     
-class TokenDecisionNode(DecisionNode):
+class ContractDecisionNode(DecisionNode):
 
     def add_warns(self, warns:List[str]):
         self.layerouts.extend([Fore.RED + get_risk_level(self) + Fore.RED + warn for warn in warns])
@@ -89,9 +44,9 @@ class TokenDecisionNode(DecisionNode):
         self.layerouts.append(Fore.GREEN + get_risk_level(self) + info)
     
     def check(self, contract_info: ContractInfo) -> NodeReturn:
-        return self.token_check(contract_info)
+        return self.contract_check(contract_info)
 
     @abstractmethod
-    def token_check(self, token_info:TokenInfo) -> NodeReturn:
+    def contract_check(self, contract_info:ContractInfo) -> NodeReturn:
         pass
 

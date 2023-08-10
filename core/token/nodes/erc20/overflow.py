@@ -39,12 +39,17 @@ def node_has_risk(node: Node):
 
 
 def overflow_check(f: Function) -> List[Node]:
-    if f.compilation_unit.solc_version >= "0.8.0":
-        return None
     nodes_have_risk = []
-    for node in f.nodes:
-        if node_has_risk(node):
-            nodes_have_risk.append(node)
+    if f.compilation_unit.solc_version >= "0.8.0":
+        # unchecked
+        for node in f.nodes:
+            if not node.scope.is_checked:
+                nodes_have_risk.append(node)
+        
+    else:
+        for node in f.nodes:
+            if node_has_risk(node):
+                nodes_have_risk.append(node)
 
     for internal_call in f.internal_calls:
         if not isinstance(internal_call, SolidityFunction):

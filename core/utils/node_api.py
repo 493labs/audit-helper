@@ -34,7 +34,27 @@ class ReadSlot:
             'to': self.w3.toChecksumAddress(contract_addr),
             'data': self.w3.keccak(text = method)[:4].hex()
         })
-
+    
+    def read_by_slector_args(self, contract_addr:str, method:str, calldata_args:str) -> HexBytes:
+        return self.w3.eth.call({
+            'to': self.w3.toChecksumAddress(contract_addr),
+            'data': self.w3.keccak(text = method)[:4].hex() + calldata_args
+        })
+    
+    def read_role(self, contract_addr:str, ROLE:str)->List[str]:
+        role_addr=[]
+        if ROLE == "DEFAULT_ADMIN_ROLE":
+            role_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+        else:
+            role_hash = self.w3.keccak(text = ROLE).hex()
+        role_count_hex = self.read_by_slector_args(contract_addr, "getRoleMemberCount(bytes32)", role_hash[2:])
+        role_count = self.w3.toInt(role_count_hex)
+        for i in range(role_count):
+            index = self.w3.toHex(i)[2:].rjust(64,'0')
+            calldata_args = role_hash[2:] + index
+            role_addr.append(self.read_by_slector_args(contract_addr, "getRoleMember(bytes32,uint256)", calldata_args).hex()[26:])
+        return role_addr
+            
     def read_mapping_value(self, contract_addr: str, key, point) -> HexBytes:
         '''
         key为 {'s':obj}、{'bs':obj}、{'addrStr':obj}、{'v':obj} 中的一种， 分别对应solidity中的string、bytes、address和值类型 
@@ -68,11 +88,26 @@ class ReadSlot:
             'fromBlock': createBlock,
         }
         return [log['topics'][2][12:32].hex() for log in self.w3.eth.get_logs(filter_Params)]
-    def read_role(self, address:str, createBlock:int, role:str)->List[str]:
+    
+    def read_role_by_event(self, address:str, createBlock:int, role:str)->List[str]:
         return self._read_role(address, createBlock, '0x' + event_signature_to_log_topic(role).hex())
+    
     def read_default_admin_role(self, address:str, createBlock:int)->List[str]:
         return self._read_role(address, createBlock, '0x0000000000000000000000000000000000000000000000000000000000000000')
     
     def read_block_num_by_txhash(self, txhash:str)->Tuple[int, int]:
         txdata = self.w3.eth.get_transaction(txhash)
         return txdata['blockNumber'], txdata['transactionIndex']
+    
+    def read_sig_by_txhash(self, txhash:str)->Tuple[str, str, str]:
+        txdata = self.w3.eth.get_transaction(txhash)
+        return txdata['r'], txdata['s'], txdata['v']
+    
+    def is_contract(self, address:str)->bool:
+        code = self.w3.eth.get_code(self.w3.toChecksumAddress(address))
+        # https://web3py.readthedocs.io/en/v6.1.0/web3.eth.html#web3.eth.Eth.get_code
+        if code == HexBytes("0x"):
+            return False
+        else:
+            return True
+            

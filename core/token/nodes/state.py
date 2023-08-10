@@ -7,16 +7,17 @@ from slither.core.solidity_types import MappingType, ElementaryType
 from ..base_node import TokenDecisionNode, NodeReturn
 from ..token_info import ERC20_E_view, ERC721_E_view, TokenInfo
 
-def get_e_view_state(c:Contract, e_view:Union[ERC20_E_view, ERC721_E_view] )->List[StateVariable]:
-    for s in c.state_variables:
-        if s.name == e_view.name:
-            return [s]
-    f = c.get_function_from_signature(e_view.value)
-    if f:
-        return [s for s in f.all_state_variables_read() if not (s.is_constant or s.is_immutable)]
-    return None
+
 
 class StateNode(TokenDecisionNode):
+    def get_e_view_state(self, c:Contract, e_view:Union[ERC20_E_view, ERC721_E_view] )->List[StateVariable]:
+        for s in c.state_variables:
+            if s.name == e_view.name:
+                return [s]
+        f = c.get_function_from_signature(e_view.value)
+        if f:
+            return [s for s in f.all_state_variables_read() if not (s.is_constant or s.is_immutable)]
+        return None
 
     def is_safemoon(self, token_info: TokenInfo) -> bool:
         balance_f = token_info.get_f(ERC20_E_view.balanceOf)
@@ -41,7 +42,7 @@ class StateNode(TokenDecisionNode):
 
         warns = []
         for e in token_e_view._member_map_.values():
-            states = get_e_view_state(token_info.c,e)
+            states = self.get_e_view_state(token_info.c,e)
             if states == None:
                 warns.append(f'{e.name} 未找到相应的状态变量')
                 continue

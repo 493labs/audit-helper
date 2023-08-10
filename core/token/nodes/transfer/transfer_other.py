@@ -5,6 +5,8 @@ from typing import List, Tuple
 from slither.core.declarations import SolidityFunction, Function
 from slither.core.variables.state_variable import StateVariable
 from slither.core.cfg.node import Node, NodeType
+
+
 def get_dominance_frontier(node: Node)-> Node:
     if node.type == NodeType.IFLOOP:
         # 循环时的边界指向了循环
@@ -90,10 +92,11 @@ class TransferOtherNode(TokenDecisionNode):
         warns = []
         for func_e in func_es:
             transfer_other_func = token_info.get_f(func_e)
+            all_state_variable = transfer_other_func.all_state_variables_read()
             allow_state = token_info.state_map[state_e]
             if not branch_read_state(transfer_other_func.entry_point, allow_state)[0]:
             # if not all_branchs_read_state(transfer_other_func, allow_state):
-                warns.append(f'{transfer_other_func.full_name} 存在未读取 {allow_state.name} 的路径')
+                warns.append(f'{transfer_other_func.name} 存在未读取 {allow_state.name} 的路径')
 
         if len(warns) == 0:
             self.add_info(f'未发现 transferFrom 模式的方法中有未经授权转移其他人代币的实现')

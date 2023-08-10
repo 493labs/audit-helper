@@ -7,6 +7,8 @@ sys.path.append('.')
 from core.visualize.call_graph import CallGraph, View
 from core.general.analyze_frame import general_analyze
 from core.utils.change_solc_version import change_solc_version
+from core.general.check_frame import contract_decision
+from core.general.base_node import rank_layerouts
 
 AUDIT_HELPER = 'audit-helper'
 
@@ -26,23 +28,27 @@ def call_graph(config:ConfigParser, c:Contract):
 def audit_helper(config:ConfigParser):
     root_path = config.get(AUDIT_HELPER, 'root_path')
     contract_path = config.get(AUDIT_HELPER, 'contract_path')
-    contract_name = config.get(AUDIT_HELPER, 'contract_name')   
+    entry_file = config.get(AUDIT_HELPER, 'entry_file')
+    entry_contract = config.get(AUDIT_HELPER, 'entry_contract')   
 
     os.chdir(root_path)
-    change_solc_version(contract_path)
+    change_solc_version(entry_file)
     sli = Slither(contract_path)
-    cs = sli.get_contract_from_name(contract_name)
+    cs = sli.get_contract_from_name(entry_contract)
     assert len(cs) == 1
     c = cs[0]
 
-    if config.getboolean(AUDIT_HELPER, 'with_call_graph'):
-        call_graph(config, c)
+    #if config.getboolean(AUDIT_HELPER, 'with_call_graph'):
+    #    call_graph(config, c)
 
     if config.getboolean(AUDIT_HELPER, 'with_general_check'):
         layerouts = general_analyze(c=c)
         for layerout in layerouts:
             print(layerout)
 
+    layerouts = contract_decision(c=c)
+    for layerout in rank_layerouts(layerouts):
+        print(layerout)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import re
 from ...base_node import TokenDecisionNode, NodeReturn
 from ...token_info import ERC20_E_view, TokenInfo
 from slither.core.solidity_types import ElementaryType
@@ -8,7 +9,8 @@ class CheatState(TokenDecisionNode):
         cap_states = [s for s in token_info.c.state_variables \
             if isinstance(s.type, ElementaryType) \
                 and 'uint' in s.type.type \
-                    and s.name in ['maxSupply','cap']
+                    #and s.name in ['maxSupply','cap']
+                    and re.search(r"(?i).*(cap|maxsupply).*", s.name)
         ]
         if cap_states:
             mint_fs = token_info.get_mint_fs()
@@ -16,7 +18,7 @@ class CheatState(TokenDecisionNode):
                 params = [param for param in mint_f.parameters \
                     if isinstance(param.type, ElementaryType) \
                         and 'uint' in param.type.type\
-                            and not mint_f.is_reading_in_require_or_assert(param)
+                            and not (mint_f.is_reading_in_require_or_assert(param) or mint_f.is_reading_in_conditional_node(param))
                 ]
                 if params:
                     cap_names = ','.join([cap_s.name for cap_s in cap_states])
@@ -31,7 +33,7 @@ class CheatState(TokenDecisionNode):
             if len(cheat_fs) == 0:
                 self.add_info(f'未发现 {totalSupply_state.name} 未增加的 mint 行为')
             else:
-                fnames = ','.join([f.full_name for f in cheat_fs])
+                fnames = ','.join([f.name for f in cheat_fs])
                 self.add_warn(f'{fnames} 存在 mint 行为但 {totalSupply_state.name} 未增加')  
 
         return NodeReturn.branch0
