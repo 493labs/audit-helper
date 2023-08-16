@@ -58,64 +58,66 @@ class SourceCode:
         if not os.path.exists(self.code_dir):
             os.makedirs(self.code_dir)
             
-        # if self.chain.name == 'Mantle':
-        #     raw_contract_info = ret_json['result'][0]
-        #     contract_name: str = raw_contract_info['ContractName']
-        #     contract_path: str = raw_contract_info['FileName']
+        if self.chain.name == 'Mantle':
+            raw_contract_info = ret_json['result'][0]
+            contract_name: str = raw_contract_info['ContractName']
+            contract_path: str = raw_contract_info['FileName']
+            if contract_path == '':
+                contract_path = contract_name + '.sol'
             
-        #     conf = ConfigParser()
-        #     conf.add_section('info')
-        #     conf.set('info','chain', self.chain.name)
-        #     conf.set('info','address',self.addr)
-        #     conf.set('info','code_path',self.code_dir)
-        #     conf.set('info','contract_name', contract_name)
-        #     conf.set('info','contract_path', contract_path)
-            
-        #     AdditionalSources: str = raw_contract_info['AdditionalSources']
-        #     for AdditionalSource in AdditionalSources:
-        #         full_file_name = self.code_dir+'/'+AdditionalSource['Filename']
-        
-        #         temp_dir_path, _ = os.path.split(full_file_name)
-        #         if not os.path.exists(temp_dir_path):
-        #             os.makedirs(temp_dir_path)
+            conf = ConfigParser()
+            conf.add_section('info')
+            conf.set('info','chain', self.chain.name)
+            conf.set('info','address',self.addr)
+            conf.set('info','code_path',self.code_dir)
+            conf.set('info','contract_name', contract_name)
+            conf.set('info','contract_path', contract_path)
+            self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
+       
+            try:
+                AdditionalSources: str = raw_contract_info['AdditionalSources']
+                for AdditionalSource in AdditionalSources:
+                    full_file_name = self.code_dir+'/'+AdditionalSource['Filename']
+                    temp_dir_path, _ = os.path.split(full_file_name)
+                    if not os.path.exists(temp_dir_path):
+                        os.makedirs(temp_dir_path)
+                    self.write_sol(full_file_name, AdditionalSource['SourceCode'])
+            except Exception as err:
+                pass
+
+        else:    
+            raw_contract_info = ret_json['result'][0]
+            raw_source_info: str = raw_contract_info['SourceCode']
+            contract_name: str = raw_contract_info['ContractName']
+            contract_file_name: str = contract_name + '.sol'
+
+            conf = ConfigParser()
+            conf.add_section('info')
+            conf.set('info','chain', self.chain.name)
+            conf.set('info','address',self.addr)
+            conf.set('info','code_path',self.code_dir)
+            conf.set('info','contract_name', contract_name)
+
+            if raw_source_info.startswith('{'):
+                if raw_source_info.startswith('{{'):
+                    raw_source_info = raw_source_info[1:-1]
+                mul_source_info = json.loads(raw_source_info)
+                if 'sources' in mul_source_info:
+                    mul_source_info = mul_source_info['sources']
+
+                conf.set('info','contract_path', self.get_file_pos_by_contract_name(mul_source_info,contract_name))
+
+                for contract_path, source_info in mul_source_info.items():
+                    full_file_name = self.code_dir+'/'+contract_path
+
+                    temp_dir_path, _ = os.path.split(full_file_name)
+                    if not os.path.exists(temp_dir_path):
+                        os.makedirs(temp_dir_path)
                     
-        #         self.write_sol(full_file_name, AdditionalSource['SourceCode'])
-            
-        #     self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
-            
-        # else:    
-        raw_contract_info = ret_json['result'][0]
-        raw_source_info: str = raw_contract_info['SourceCode']
-        contract_name: str = raw_contract_info['ContractName']
-        contract_file_name: str = contract_name + '.sol'
-
-        conf = ConfigParser()
-        conf.add_section('info')
-        conf.set('info','chain', self.chain.name)
-        conf.set('info','address',self.addr)
-        conf.set('info','code_path',self.code_dir)
-        conf.set('info','contract_name', contract_name)
-
-        if raw_source_info.startswith('{'):
-            if raw_source_info.startswith('{{'):
-                raw_source_info = raw_source_info[1:-1]
-            mul_source_info = json.loads(raw_source_info)
-            if 'sources' in mul_source_info:
-                mul_source_info = mul_source_info['sources']
-
-            conf.set('info','contract_path', self.get_file_pos_by_contract_name(mul_source_info,contract_name))
-
-            for contract_path, source_info in mul_source_info.items():
-                full_file_name = self.code_dir+'/'+contract_path
-
-                temp_dir_path, _ = os.path.split(full_file_name)
-                if not os.path.exists(temp_dir_path):
-                    os.makedirs(temp_dir_path)
-                    
-                self.write_sol(full_file_name, source_info['content'])
-        else:
-            conf.set('info', 'contract_path', contract_file_name)
-            self.write_sol(self.code_dir+'/'+contract_file_name, raw_source_info)
+                    self.write_sol(full_file_name, source_info['content'])
+            else:
+                conf.set('info', 'contract_path', contract_file_name)
+                self.write_sol(self.code_dir+'/'+contract_file_name, raw_source_info)
 
         with open(self.conf_path, 'w', encoding='utf-8') as fp:
             conf.write(fp)
