@@ -10,3 +10,18 @@ contract reentrant {
         userBalances[msg.sender] = 0;
     }
 }
+
+contract reentrant2 {
+    mapping(address => uint256) public userBalances;
+
+    function withdrawBalance() external {  
+        _withdrawBalance();
+    }
+
+    function _withdrawBalance() internal {  
+        uint256 amountToWithdraw = userBalances[msg.sender];
+        (bool success, ) = msg.sender.call{value: amountToWithdraw}("");
+        require(success);
+        userBalances[msg.sender] = 0;
+    }
+}

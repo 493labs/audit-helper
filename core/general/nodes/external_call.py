@@ -1,10 +1,9 @@
-from typing import List, Mapping
+from typing import List, Mapping, Tuple, Set
 from slither.analyses.data_dependency.data_dependency import is_dependent
 from slither.core.declarations import Contract, Function, FunctionContract
 from slither.core.variables.state_variable import StateVariable
 from slither.core.cfg.node import Node
 from slither.core.expressions import MemberAccess, Identifier, TypeConversion
-from slither.slithir.operations import HighLevelCall, LowLevelCall, LibraryCall
 from core.frame.base_node import DecisionNode,NodeReturn
 from core.frame.contract_info import ContractInfo
 
@@ -28,56 +27,69 @@ class DangerousExCallNode(DecisionNode):
                             ))
         return NodeReturn.branch0
 
-# class ReentrantNode(DecisionNode):
+# 对内部调用进行迭代检查
+def iter_analyze_function(f:Function)->Tuple[bool, int, List[StateVariable], List[StateVariable]]:
+    nodes = f.nodes_ordered_dominators
+    has_external_call = False
+    state_variables_read_pre:List[StateVariable] = []
+    state_variables_written_post:List[StateVariable] = []
+    for i in range(len(nodes)):
+        node = nodes[i]
+        state_variables_read_pre.extend(node.state_variables_read)
+        internal_calls = [c for c in node.internal_calls if isinstance(c, Function)]
+        if internal_calls:
+            assert len(internal_calls) == 1 # 假设一个node只有一个internal_call            
+            c = internal_calls[0]
+            c_has_external_call,_ ,c_state_variables_read_pre,c_state_variables_written_post  = iter_analyze_function(c)
+            state_variables_read_pre.extend(c_state_variables_read_pre)
+            if c_has_external_call:
+                has_external_call = True
+                state_variables_written_post.extend(c_state_variables_written_post)
+                break 
 
-#     def check(self, contract_info: ContractInfo) -> NodeReturn:
-#         for f in contract_info.c.functions_entry_points:
-#             if f.is_constructor:
-#                 continue
+        if [name for (_,name) in node.low_level_calls if name != "staticcall" ] \
+                or [f for (_,f) in node.high_level_calls if not f.view and not f.pure]:
+            has_external_call = True
+            break #存在多次外部调用时，只检查第一次
 
-#             all_slithir_operations = f.all_slithir_operations() 
+    for j in range(i,len(nodes)):
+        node = nodes[j]
+        state_variables_written_post.extend(node.state_variables_written)
+        internal_calls = [c for c in node.internal_calls if isinstance(c, Function)]
+        if internal_calls:
+            assert len(internal_calls) == 1 # 假设一个node只有一个internal_call            
+            c = internal_calls[0]
+            state_variables_written_post.extend(c.all_state_variables_written())
+    return has_external_call, i, list(set(state_variables_read_pre)), list(set(state_variables_written_post))
 
-#             has_external_call = False
-#             for i in range(len(all_slithir_operations)):
-#                 ir = all_slithir_operations[i]        
-#                 if (isinstance(ir, HighLevelCall) and not isinstance(ir, LibraryCall)) or isinstance(ir, LowLevelCall):  
-#                     has_external_call = True
-#                     break
 
-#             if has_external_call:
-#                 state_variables_written:List[StateVariable] = []
-#                 node_parsed:Mapping[Node,bool] = {}
-#                 for j in range(i, len(all_slithir_operations)):
-#                     ir = all_slithir_operations[j]
-#                     if ir.node not in node_parsed:
-#                         node_parsed[ir.node] = True
-#                         if len(ir.node.state_variables_written) > 0:
-#                             state_variables_written.extend(ir.node.state_variables_written)
-#                             state_variables_written = list(set(state_variables_written))  
-                            
 
-#                 if len(state_variables_written) > 0:
-#                     if not self._has_nonReentrant_mechanism(f):
-#                         self.add_warn(f'{f.name} 的 {all_slithir_operations[i].node.expression} 存在针对自身的重入风险')
-#                     f:FunctionContract = f
-#                     for ff in f.contract.functions_entry_points:
-#                         if ff == f or ff.is_constructor or ff.view or ff.pure:
-#                             continue
-#                         read_the_writed_state = False
-#                         for s in ff.all_state_variables_read():
-#                             if s in state_variables_written:
-#                                 read_the_writed_state = True
-#                                 break
-#                         if read_the_writed_state and not self._has_nonReentrant_mechanism(ff):
-#                             self.add_warn(f'{f.name} 的 {all_slithir_operations[i].node.expression} 存在针对 {ff.name} 的重入风险')
+class ReentrantNode(DecisionNode):
+
+    def check(self, contract_info: ContractInfo) -> NodeReturn:
+        # 不能基于f.all_slithir_operations()进行搜索，没有顺序
+        for f in contract_info.c.functions_entry_points:
+            if f.is_constructor:
+                continue
+            has_external_call,i,state_variables_read_pre,state_variables_written_post  = iter_analyze_function(f)
+            if has_external_call:
+                if set(state_variables_read_pre) & set(state_variables_written_post) and not self._has_nonReentrant_mechanism(f):
+                    self.add_warn(f'{f.name} 的 {f.nodes_ordered_dominators[i].expression} 存在针对自身的重入风险')
+
+                f:FunctionContract = f
+                for ff in f.contract.functions_entry_points:
+                    if ff == f or ff.is_constructor or ff.view or ff.pure or self._has_nonReentrant_mechanism(ff):
+                        continue
+                    if set(state_variables_read_pre) & set(ff.all_state_variables_written()):
+                        self.add_warn(f'{f.name} 的 {f.nodes_ordered_dominators[i].expression} 存在针对 {ff.name} 的重入风险')
         
-#     def _has_nonReentrant_mechanism(self, f:Function) -> bool:
-#         '''
-#         是否具有防重入机制
-#         '''
-#         for m in f.modifiers:
-#             if m.name == 'nonReentrant':
-#                 return True
-#         return False
+    def _has_nonReentrant_mechanism(self, f:Function) -> bool:
+        '''
+        是否具有防重入机制
+        '''
+        for m in f.modifiers:
+            if m.name == 'nonReentrant':
+                return True
+        return False
 
 # 循环中有委托调用
