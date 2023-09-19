@@ -1,9 +1,10 @@
-from typing import List, Mapping, Tuple, Set
+from typing import List, Optional, Tuple, Set
 from slither.analyses.data_dependency.data_dependency import is_dependent
 from slither.core.declarations import Contract, Function, FunctionContract
 from slither.core.variables.state_variable import StateVariable
-from slither.core.cfg.node import Node
+from slither.core.cfg.node import Node, NodeType
 from slither.core.expressions import MemberAccess, Identifier, TypeConversion
+from slither.slithir.operations import LowLevelCall, InternalCall
 from core.frame.base_node import DecisionNode,NodeReturn
 from core.frame.contract_info import ContractInfo
 
@@ -62,8 +63,6 @@ def iter_analyze_function(f:Function)->Tuple[bool, int, List[StateVariable], Lis
             state_variables_written_post.extend(c.all_state_variables_written())
     return has_external_call, i, list(set(state_variables_read_pre)), list(set(state_variables_written_post))
 
-
-
 class ReentrantNode(DecisionNode):
 
     def check(self, contract_info: ContractInfo) -> NodeReturn:
@@ -92,4 +91,80 @@ class ReentrantNode(DecisionNode):
                 return True
         return False
 
+
 # 循环中有委托调用
+class DelegatecallInLoopNode(DecisionNode):
+
+    def check(self, contract_info: ContractInfo) -> NodeReturn:
+        nodes = detect_delegatecall_in_loop(contract_info.c)
+        fnames = set([node.function.name for node in nodes])
+        if len(fnames) > 0:
+            fnamesStr = ','.join(fnames)
+            self.add_warn(f'{fnamesStr} 在循环中存在委托调用')
+        return NodeReturn.branch0
+
+def detect_delegatecall_in_loop(contract: Contract) -> List[Node]:
+    results: List[Node] = []
+    for f in contract.functions_entry_points:
+        if f.is_implemented and f.payable:
+            delegatecall_in_loop(f.entry_point, 0, [], results)
+    return results
+
+def delegatecall_in_loop(
+    node: Optional[Node], in_loop_counter: int, visited: List[Node], results: List[Node]
+) -> None:
+
+    if node is None:
+        return
+
+    if node in visited:
+        return
+    # shared visited
+    visited.append(node)
+
+    if node.type == NodeType.STARTLOOP:
+        in_loop_counter += 1
+    elif node.type == NodeType.ENDLOOP:
+        in_loop_counter -= 1
+
+    for ir in node.all_slithir_operations():
+        if (
+            in_loop_counter > 0
+            and isinstance(ir, (LowLevelCall))
+            and ir.function_name == "delegatecall"
+        ):
+            results.append(ir.node)
+        if isinstance(ir, (InternalCall)) and ir.function:
+            delegatecall_in_loop(ir.function.entry_point, in_loop_counter, visited, results)
+
+    for son in node.sons:
+        delegatecall_in_loop(son, in_loop_counter, visited, results)
+
+
+# 未检查低级别调用的返回值
+class UncheckedLowLevelCallNode(DecisionNode):
+
+    def check(self, contract_info: ContractInfo) -> NodeReturn:
+        nodes:List[Node] = []
+        for f in contract_info.c.functions_and_modifiers:
+            nodes.extend(detect_unused_return_values(f))
+        for node in nodes:
+            self.add_warn(f'{node.function.name} 的 {node.expression} 存在未检查的低级别调用')
+        return NodeReturn.branch0
+
+def detect_unused_return_values(f: FunctionContract) -> List[Node]:
+    values_returned = []
+    nodes_origin = {}
+    for n in f.nodes:
+        for ir in n.irs:
+            if isinstance(ir, LowLevelCall):
+                # if a return value is stored in a state variable, it's ok
+                if ir.lvalue and not isinstance(ir.lvalue, StateVariable):
+                    values_returned.append(ir.lvalue)
+                    nodes_origin[ir.lvalue] = ir
+
+            for read in ir.read:
+                if read in values_returned:
+                    values_returned.remove(read)
+
+    return [nodes_origin[value].node for value in values_returned]
