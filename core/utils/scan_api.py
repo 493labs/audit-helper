@@ -59,6 +59,7 @@ class SourceCode:
             os.makedirs(self.code_dir)
             
         if self.chain.name == 'Mantle':
+            # https://explorer.mantle.xyz/api?module=contract&action=getsourcecode&address=0xdF56b8C55357Be7F9364f32BF188dD6363eF3FD7
             raw_contract_info = ret_json['result'][0]
             contract_name: str = raw_contract_info['ContractName']
             contract_path: str = raw_contract_info['FileName']
@@ -72,7 +73,7 @@ class SourceCode:
             conf.set('info','code_path',self.code_dir)
             conf.set('info','contract_name', contract_name)
             conf.set('info','contract_path', contract_path)
-            self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
+            
        
             try:
                 AdditionalSources: str = raw_contract_info['AdditionalSources']
@@ -84,6 +85,7 @@ class SourceCode:
                     self.write_sol(full_file_name, AdditionalSource['SourceCode'])
             except Exception as err:
                 pass
+            self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
 
         else:    
             raw_contract_info = ret_json['result'][0]
