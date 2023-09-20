@@ -53,10 +53,13 @@ class ReentrantNode(DecisionNode):
 
                 f:FunctionContract = f
                 for ff in f.contract.functions_entry_points:
-                    if ff == f or ff.is_constructor or ff.view or ff.pure or self._has_nonReentrant_mechanism(ff):
+                    if ff == f or ff.is_constructor or ff.pure or self._has_nonReentrant_mechanism(ff):
                         continue
-                    if set(state_variables_read_pre) & set(ff.all_state_variables_written()):
-                        self.add_warn(f'{f.name} 的 {f.nodes_ordered_dominators[i].expression} 存在针对 {ff.name} 的重入风险')
+                    if set(state_variables_written_post) & set(ff.all_state_variables_read()):
+                        if ff.view:
+                            self.add_warn(f'{f.name} 的 {f.nodes_ordered_dominators[i].expression} 存在针对 {ff.name} 的只读重入风险')
+                        else:
+                            self.add_warn(f'{f.name} 的 {f.nodes_ordered_dominators[i].expression} 存在针对 {ff.name} 的重入风险')
         return NodeReturn.branch0
         
     def _has_nonReentrant_mechanism(self, f:Function) -> bool:
