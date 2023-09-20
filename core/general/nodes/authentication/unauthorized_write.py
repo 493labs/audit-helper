@@ -3,7 +3,7 @@ from slither.core.cfg.node import NodeType
 from core.frame.base_node import DecisionNode, NodeReturn
 from core.frame.contract_info import ContractInfo
 
-class AuthenticationNode(DecisionNode):
+class UnauthorizedWriteNode(DecisionNode):
 
     def check(self, contract_info: ContractInfo) -> NodeReturn:
         unusualAuthenticationFnames = []
