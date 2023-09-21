@@ -7,7 +7,6 @@ sys.path.append('.')
 from core.visualize.call_graph import CallGraph, View
 from core.general.analyze_frame import general_analyze
 from core.utils.change_solc_version import change_solc_version
-from core.general.check_frame import contract_decision
 from core.general.base_node import rank_layerouts
 
 AUDIT_HELPER = 'audit-helper'
@@ -45,10 +44,6 @@ def audit_helper(config:ConfigParser):
         layerouts = general_analyze(c=c)
         for layerout in layerouts:
             print(layerout)
-
-    layerouts = contract_decision(c=c)
-    for layerout in rank_layerouts(layerouts):
-        print(layerout)
 
 
 if __name__ == "__main__":
