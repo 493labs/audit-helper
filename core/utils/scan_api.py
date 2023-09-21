@@ -59,9 +59,12 @@ class SourceCode:
             os.makedirs(self.code_dir)
             
         if self.chain.name == 'Mantle':
+            # https://explorer.mantle.xyz/api?module=contract&action=getsourcecode&address=0xdF56b8C55357Be7F9364f32BF188dD6363eF3FD7
             raw_contract_info = ret_json['result'][0]
             contract_name: str = raw_contract_info['ContractName']
             contract_path: str = raw_contract_info['FileName']
+            if contract_path == '':
+                contract_path = contract_name + '.sol'
             
             conf = ConfigParser()
             conf.add_section('info')
@@ -71,18 +74,19 @@ class SourceCode:
             conf.set('info','contract_name', contract_name)
             conf.set('info','contract_path', contract_path)
             
-            AdditionalSources: str = raw_contract_info['AdditionalSources']
-            for AdditionalSource in AdditionalSources:
-                full_file_name = self.code_dir+'/'+AdditionalSource['Filename']
-        
-                temp_dir_path, _ = os.path.split(full_file_name)
-                if not os.path.exists(temp_dir_path):
-                    os.makedirs(temp_dir_path)
-                    
-                self.write_sol(full_file_name, AdditionalSource['SourceCode'])
-            
+       
+            try:
+                AdditionalSources: str = raw_contract_info['AdditionalSources']
+                for AdditionalSource in AdditionalSources:
+                    full_file_name = self.code_dir+'/'+AdditionalSource['Filename']
+                    temp_dir_path, _ = os.path.split(full_file_name)
+                    if not os.path.exists(temp_dir_path):
+                        os.makedirs(temp_dir_path)
+                    self.write_sol(full_file_name, AdditionalSource['SourceCode'])
+            except Exception as err:
+                pass
             self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
-            
+
         else:    
             raw_contract_info = ret_json['result'][0]
             raw_source_info: str = raw_contract_info['SourceCode']

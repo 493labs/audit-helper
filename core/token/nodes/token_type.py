@@ -87,9 +87,7 @@ class TokenTypeNode(TokenDecisionNode):
             self.add_info(f'代理合约地址为 {token_info.address}')
             read_slot = ReadSlot(token_info.chain)
             impl = read_slot.read_proxy_impl(token_info.address)[12:32].hex()
-            admin = read_slot.read_proxy_admin(token_info.address)[12:32].hex()
             self.add_info(f'代理合约的implementation地址为 {impl}')
-            self.add_info(f'代理合约的proxyadmin地址为 {admin}')
             if impl == ZERO_ADDRESS:
                 return NodeReturn.reach_leaf
 
@@ -102,14 +100,27 @@ class TokenTypeNode(TokenDecisionNode):
                 self.add_warn('获取实现合约contract对象失败，原因如下：')
                 self.add_warn(str(err))
                 return NodeReturn.reach_leaf
-            
-            # proxyAdmin owner是否为EOA地址
-            owner_addr = read_slot.read_by_selector(token_info.address, "owner()")[12:32].hex()
-            # 如果 owner_addr 为EOA地址
-            if not read_slot.is_contract(owner_addr):
-                self.add_warn(f'代理合约proxyAdmin owner为EOA地址 {owner_addr}')
-
             self.add_info('获取实现合约成功，进行进一步分析')
+            
+            admin = read_slot.read_proxy_admin(token_info.address)[12:32].hex()
+            beacon = read_slot.read_proxy_beacon(token_info.address)[12:32].hex()
+            if admin != ZERO_ADDRESS:
+                self.add_info(f'代理合约为transparent proxy, proxyadmin地址为 {admin}')
+                # proxyAdmin owner是否为EOA地址
+                proxy_owner_addr = read_slot.read_by_selector(admin, "owner()")[12:32].hex()
+                # 如果 owner_addr 为EOA地址
+                if not read_slot.is_contract(proxy_owner_addr):
+                    self.add_warn(f'代理合约的proxyAdmin owner为EOA地址 {proxy_owner_addr}')
+                    
+            if beacon != ZERO_ADDRESS:
+                self.add_info(f'代理合约为beacon proxy, beacon地址为 {beacon}')
+                # beacon owner是否为EOA地址
+                beacon_owner_addr = read_slot.read_by_selector(beacon, "owner()")[12:32].hex()
+                # 如果 owner_addr 为EOA地址
+                if not read_slot.is_contract(beacon_owner_addr):
+                    self.add_warn(f'代理合约的beacon owner为EOA地址 {beacon_owner_addr}')
+
+            
             token_info.proxy_c = token_info.c
             token_info.c = impl_c
 
