@@ -21,7 +21,7 @@ class ReadSlot:
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     def read_slot(self, contract_addr:str, slot) -> HexBytes:
-        return self.w3.eth.get_storage_at(self.w3.toChecksumAddress(contract_addr), slot)
+        return self.w3.eth.get_storage_at(self.w3.to_checksum_address(contract_addr), slot)
 
     def read_proxy_impl(self, proxy_addr:str) -> HexBytes:
         return self.read_slot(proxy_addr, IMPL_SLOT)
@@ -34,13 +34,13 @@ class ReadSlot:
 
     def read_by_selector(self, contract_addr:str, method:str) -> HexBytes:
         return self.w3.eth.call({
-            'to': self.w3.toChecksumAddress(contract_addr),
+            'to': self.w3.to_checksum_address(contract_addr),
             'data': self.w3.keccak(text = method)[:4].hex()
         })
     
     def read_by_slector_args(self, contract_addr:str, method:str, calldata_args:str) -> HexBytes:
         return self.w3.eth.call({
-            'to': self.w3.toChecksumAddress(contract_addr),
+            'to': self.w3.to_checksum_address(contract_addr),
             'data': self.w3.keccak(text = method)[:4].hex() + calldata_args
         })
     
@@ -51,9 +51,9 @@ class ReadSlot:
         else:
             role_hash = self.w3.keccak(text = ROLE).hex()
         role_count_hex = self.read_by_slector_args(contract_addr, "getRoleMemberCount(bytes32)", role_hash[2:])
-        role_count = self.w3.toInt(role_count_hex)
+        role_count = self.w3.to_int(role_count_hex)
         for i in range(role_count):
-            index = self.w3.toHex(i)[2:].rjust(64,'0')
+            index = self.w3.to_hex(i)[2:].rjust(64,'0')
             calldata_args = role_hash[2:] + index
             role_addr.append(self.read_by_slector_args(contract_addr, "getRoleMember(bytes32,uint256)", calldata_args).hex()[26:])
         return role_addr
@@ -63,19 +63,19 @@ class ReadSlot:
         key为 {'s':obj}、{'bs':obj}、{'addrStr':obj}、{'v':obj} 中的一种， 分别对应solidity中的string、bytes、address和值类型 
         point为 mapping 所在的slot
         '''
-        checked_addr = self.w3.toChecksumAddress(contract_addr)
+        checked_addr = self.w3.to_checksum_address(contract_addr)
         assert isinstance(key, dict), '传入的key的格式不对'
         if 'v' in key:
-            pp = self.w3.solidityKeccak(
+            pp = self.w3.solidity_keccak(
                 ['uint256', 'uint256'], [key['v'], point])
         elif 'addrStr' in key:
-            v = self.w3.toInt(hexstr=self.w3.toChecksumAddress(key['addrStr']))
-            pp = self.w3.solidityKeccak(['uint256', 'uint256'], [v, point])
+            v = self.w3.to_int(hexstr=self.w3.to_checksum_address(key['addrStr']))
+            pp = self.w3.solidity_keccak(['uint256', 'uint256'], [v, point])
         elif 's' in key:
-            pp = self.w3.solidityKeccak(
+            pp = self.w3.solidity_keccak(
                 ['string', 'uint256'], [key['s'], point])
         elif 'bs' in key:
-            pp = self.w3.solidityKeccak(
+            pp = self.w3.solidity_keccak(
                 ['bytes', 'uint256'], [key['bs'], point])
         else:
             assert False, '传入的key的格式不对'
@@ -107,7 +107,7 @@ class ReadSlot:
         return txdata['r'], txdata['s'], txdata['v']
     
     def is_contract(self, address:str)->bool:
-        code = self.w3.eth.get_code(self.w3.toChecksumAddress(address))
+        code = self.w3.eth.get_code(self.w3.to_checksum_address(address))
         # https://web3py.readthedocs.io/en/v6.1.0/web3.eth.html#web3.eth.Eth.get_code
         if code == HexBytes("0x"):
             return False
