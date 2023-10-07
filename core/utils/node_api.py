@@ -28,6 +28,9 @@ class ReadSlot:
 
     def read_proxy_admin(self, proxy_addr:str) -> HexBytes:
         return self.read_slot(proxy_addr, ADMIN_SLOT)
+    
+    def read_proxy_beacon(self, proxy_addr:str) -> HexBytes:
+        return self.read_slot(proxy_addr, BEACON_SLOT)
 
     def read_by_selector(self, contract_addr:str, method:str) -> HexBytes:
         return self.w3.eth.call({

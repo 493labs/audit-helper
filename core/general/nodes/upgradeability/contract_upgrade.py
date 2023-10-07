@@ -3,10 +3,9 @@ from slither.core.declarations import Contract
 from slither.slithir.operations import SolidityCall, LowLevelCall
 from slither.core.variables.state_variable import StateVariable
 from core.frame.contract_info import ContractInfo
+from core.frame.base_node import DecisionNode,NodeReturn
 
-from ...base_node import ContractDecisionNode, NodeReturn
-
-class ContractUpgradeNode(ContractDecisionNode):
+class ContractUpgradeNode(DecisionNode):
     
     def is_proxy_mode(self, c:Contract) -> bool:
         for f in c.functions_entry_points:
@@ -64,7 +63,7 @@ class ContractUpgradeNode(ContractDecisionNode):
         return True
         
 
-    def contract_check(self, contract_info: ContractInfo) -> NodeReturn:
+    def check(self, contract_info: ContractInfo) -> NodeReturn:
         
         if contract_info.c.is_upgradeable:
             # 实现合约构造函数检查
@@ -100,7 +99,7 @@ class ContractUpgradeNode(ContractDecisionNode):
                 state_names = ','.join([state.name for state in states])
                 self.add_warn(f'代理合约中存在状态变量{state_names}')
                     
-        return NodeReturn.branch1
+        return NodeReturn.branch0
 
 
         
