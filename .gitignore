@@ -147,3 +147,4 @@ entry/*.ini
 .DS_Store
 
 config/
+entry/download.json

@@ -41,8 +41,9 @@ class SourceCode:
         if code_dir:
             self.conf_path = code_dir + '/check.ini'
 
-    def download(self):
-        if os.path.exists(self.conf_path):
+    def download(self, gene_conf_file:bool = True):
+        if gene_conf_file and os.path.exists(self.conf_path):
+            # conf_path可以避免重复下载
             return        
 
         assert self.chain.code_url != "", "the code_url of {} is not set".format(self.chain.name)
@@ -58,23 +59,11 @@ class SourceCode:
         if not os.path.exists(self.code_dir):
             os.makedirs(self.code_dir)
             
+        raw_contract_info = ret_json['result'][0]
+        contract_name: str = raw_contract_info['ContractName']
+        
         if self.chain.name == 'Mantle':
-            # https://explorer.mantle.xyz/api?module=contract&action=getsourcecode&address=0xdF56b8C55357Be7F9364f32BF188dD6363eF3FD7
-            raw_contract_info = ret_json['result'][0]
-            contract_name: str = raw_contract_info['ContractName']
-            contract_path: str = raw_contract_info['FileName']
-            if contract_path == '':
-                contract_path = contract_name + '.sol'
-            
-            conf = ConfigParser()
-            conf.add_section('info')
-            conf.set('info','chain', self.chain.name)
-            conf.set('info','address',self.addr)
-            conf.set('info','code_path',self.code_dir)
-            conf.set('info','contract_name', contract_name)
-            conf.set('info','contract_path', contract_path)
-            
-       
+            # https://explorer.mantle.xyz/api?module=contract&action=getsourcecode&address=0xdF56b8C55357Be7F9364f32BF188dD6363eF3FD7            
             try:
                 AdditionalSources: str = raw_contract_info['AdditionalSources']
                 for AdditionalSource in AdditionalSources:
@@ -85,20 +74,14 @@ class SourceCode:
                     self.write_sol(full_file_name, AdditionalSource['SourceCode'])
             except Exception as err:
                 pass
-            self.write_sol(self.code_dir+'/'+contract_path, raw_contract_info['SourceCode'])
+
+            focus_contract_path: str = raw_contract_info['FileName']
+            if focus_contract_path == '':
+                focus_contract_path = contract_name + '.sol'
+            self.write_sol(self.code_dir+'/'+focus_contract_path, raw_contract_info['SourceCode'])
 
         else:    
-            raw_contract_info = ret_json['result'][0]
-            raw_source_info: str = raw_contract_info['SourceCode']
-            contract_name: str = raw_contract_info['ContractName']
-            contract_file_name: str = contract_name + '.sol'
-
-            conf = ConfigParser()
-            conf.add_section('info')
-            conf.set('info','chain', self.chain.name)
-            conf.set('info','address',self.addr)
-            conf.set('info','code_path',self.code_dir)
-            conf.set('info','contract_name', contract_name)
+            raw_source_info: str = raw_contract_info['SourceCode']            
 
             if raw_source_info.startswith('{'):
                 if raw_source_info.startswith('{{'):
@@ -107,7 +90,7 @@ class SourceCode:
                 if 'sources' in mul_source_info:
                     mul_source_info = mul_source_info['sources']
 
-                conf.set('info','contract_path', self.get_file_pos_by_contract_name(mul_source_info,contract_name))
+                focus_contract_path = self.get_file_pos_by_contract_name(mul_source_info,contract_name)
 
                 for contract_path, source_info in mul_source_info.items():
                     full_file_name = self.code_dir+'/'+contract_path
@@ -118,11 +101,19 @@ class SourceCode:
                     
                     self.write_sol(full_file_name, source_info['content'])
             else:
-                conf.set('info', 'contract_path', contract_file_name)
-                self.write_sol(self.code_dir+'/'+contract_file_name, raw_source_info)
+                focus_contract_path: str = contract_name + '.sol'
+                self.write_sol(self.code_dir+'/'+focus_contract_path, raw_source_info)
 
-        with open(self.conf_path, 'w', encoding='utf-8') as fp:
-            conf.write(fp)
+        if gene_conf_file:
+            conf = ConfigParser()
+            conf.add_section('info')
+            conf.set('info','chain', self.chain.name)
+            conf.set('info','address',self.addr)
+            conf.set('info','code_path',self.code_dir)
+            conf.set('info','contract_name', contract_name)
+            conf.set('info', 'contract_path', focus_contract_path)
+            with open(self.conf_path, 'w', encoding='utf-8') as fp:
+                conf.write(fp)
 
     def get_file_pos_by_contract_name(self,mul_source_info,contract_name:str)->str:
         for contract_path in mul_source_info.keys():
@@ -144,9 +135,20 @@ class SourceCode:
 
 
     def write_sol(self, file_path:str, content:str):
-        with open(file_path,'w',encoding='utf-8') as fp:
-            # replace用于处理苹果系统上编辑的sol文件到window上的换两行问题
-            fp.write(content.replace('\r\n','\n') + "\n\n")
+        # replace用于处理苹果系统上编辑的sol文件到window上的换两行问题
+        content = content.replace('\r\n','\n') + "\n\n"
+
+        # 需要处理多地址同时下载时文件重复问题
+        if not os.path.exists(file_path):
+            with open(file_path,'w',encoding='utf-8') as fp:
+                fp.write(content)
+        else:
+            with open(file_path,'r',encoding='utf-8') as fp:
+                content_exist = fp.read()
+            if content != content_exist:
+                new_file_path = f'{file_path[:-4]}_{self.addr[:8]}.sol'
+                with open(new_file_path,'w',encoding='utf-8') as fp:
+                    fp.write(content)
                  
 
     def get_sli_c_by_conf(self)->Contract:
