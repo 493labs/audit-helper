@@ -31,4 +31,4 @@ if __name__ == "__main__":
             source_code = SourceCode(chain,address,code_dir)
             source_code.download(gene_conf_file=False)
         with open(json_file,'w') as fp:
-            json.dump(download_config, json_file)
+            json.dump(download_config, fp)

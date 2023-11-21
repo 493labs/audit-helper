@@ -1,4 +1,4 @@
-from scheme2 import Scheme
+from scheme import Scheme
 from slither.core.declarations import Contract, Function
 from typing import Mapping, Tuple, List
 from core.general.nodes.ex_call.reentrant import iter_analyze_function
