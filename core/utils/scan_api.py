@@ -55,23 +55,28 @@ class SourceCode:
         })    
         ret_json = ret.json()
         assert ret_json['status']=="1", f'链{self.chain}上未找到{self.addr}的代码'
-        # 放在这里避免建立无效目录
-        if not os.path.exists(self.code_dir):
-            os.makedirs(self.code_dir)
             
         raw_contract_info = ret_json['result'][0]
         contract_name: str = raw_contract_info['ContractName']
+
+        # 处理合约中包含多个文件的情况
+        def handle_for_multi(contract_path:str, content):
+            if contract_path.startswith('node_modules/'): # hardhat项目
+                contract_path = contract_path[13:]
+            # elif contract_path.startswith('lib/'): # foundry项目
+                # contract_path = contract_path[4:]
+                # contract_path = contract_path.replace("lib/openzeppelin-contracts/contracts", "openzeppelin")
+                # contract_path = contract_path.replace("lib/openzeppelin-contracts-upgradeable/contracts", "openzeppelin-upgradeable")
+
+            full_file_name = self.code_dir+'/'+contract_path
+            self.write_sol(full_file_name, content)
         
         if self.chain.name == 'Mantle':
             # https://explorer.mantle.xyz/api?module=contract&action=getsourcecode&address=0xdF56b8C55357Be7F9364f32BF188dD6363eF3FD7            
             try:
                 AdditionalSources: str = raw_contract_info['AdditionalSources']
                 for AdditionalSource in AdditionalSources:
-                    full_file_name = self.code_dir+'/'+AdditionalSource['Filename']
-                    temp_dir_path, _ = os.path.split(full_file_name)
-                    if not os.path.exists(temp_dir_path):
-                        os.makedirs(temp_dir_path)
-                    self.write_sol(full_file_name, AdditionalSource['SourceCode'])
+                    handle_for_multi(AdditionalSource['Filename'], AdditionalSource['SourceCode'])
             except Exception as err:
                 pass
 
@@ -90,16 +95,10 @@ class SourceCode:
                 if 'sources' in mul_source_info:
                     mul_source_info = mul_source_info['sources']
 
-                focus_contract_path = self.get_file_pos_by_contract_name(mul_source_info,contract_name)
-
                 for contract_path, source_info in mul_source_info.items():
-                    full_file_name = self.code_dir+'/'+contract_path
+                    handle_for_multi(contract_path, source_info['content'])
 
-                    temp_dir_path, _ = os.path.split(full_file_name)
-                    if not os.path.exists(temp_dir_path):
-                        os.makedirs(temp_dir_path)
-                    
-                    self.write_sol(full_file_name, source_info['content'])
+                focus_contract_path = self.get_file_pos_by_contract_name(mul_source_info,contract_name)
             else:
                 focus_contract_path: str = contract_name + '.sol'
                 self.write_sol(self.code_dir+'/'+focus_contract_path, raw_source_info)
@@ -116,8 +115,9 @@ class SourceCode:
                 conf.write(fp)
 
     def get_file_pos_by_contract_name(self,mul_source_info,contract_name:str)->str:
+        target_file = contract_name + '.sol'
         for contract_path in mul_source_info.keys():
-            if contract_name in contract_path:
+            if target_file == contract_path or contract_path.endswith(f'/{target_file}'):
                 if contract_path.startswith('/'):
                     # 有些下载path前面有个'/'，比如 ETH 0x0ca0296387687d670d56214b312b19f082b21923
                     return contract_path[1:]
@@ -137,6 +137,10 @@ class SourceCode:
     def write_sol(self, file_path:str, content:str):
         # replace用于处理苹果系统上编辑的sol文件到window上的换两行问题
         content = content.replace('\r\n','\n') + "\n\n"
+
+        temp_dir_path, _ = os.path.split(file_path)
+        if not os.path.exists(temp_dir_path):
+            os.makedirs(temp_dir_path)
 
         # 需要处理多地址同时下载时文件重复问题
         if not os.path.exists(file_path):
@@ -176,21 +180,25 @@ class SourceCode:
         return cs[0]
 
 
-def download(chain: Chain, addr: str, token_type: str = None, token_name: str = None):
+def get_code_dir(chain: Chain, addr: str, token_type: str = None, token_name: str = None):
     if token_type and token_name:
-        code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+        return f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr.lower()])
     else:
-        code_dir = f'sols/raw/' + '_'.join([chain.name.lower(), addr[-8:].lower()])
+        return f'sols/raw/' + '_'.join([chain.name.lower(), addr.lower()])
+
+def download(chain: Chain, addr: str, token_type: str = None, token_name: str = None):
+    code_dir = get_code_dir(chain, addr, token_type, token_name)
     source_code = SourceCode(chain, addr, code_dir)
     source_code.download()
 
 def get_sli_c_by_token_info(chain: Chain, addr: str, token_type: str, token_name: str) -> Contract:
-    code_dir = f'sols/{token_type}/' + '_'.join([token_name, chain.name.lower(), addr[-8:].lower()])
+    assert token_type and token_name
+    code_dir = get_code_dir(chain, addr, token_type, token_name)
     source_code = SourceCode(chain, addr, code_dir)
     return source_code.get_sli_c_by_conf()
 
 def get_sli_c_by_addr(chain: Chain, addr: str) -> Contract:
-    code_dir = f'sols/raw/' + '_'.join([chain.name.lower(), addr[-8:].lower()])
+    code_dir = get_code_dir(chain, addr)
     source_code = SourceCode(chain, addr, code_dir)
     return source_code.get_sli_c_by_conf()
 

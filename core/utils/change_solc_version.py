@@ -43,11 +43,14 @@ def change_solc_version(sol_path:str):
         if line.startswith('0'):
             obj_version = line
         elif line.startswith('^'):
+            obj_version = line[1:]
+            
             def digit(s:str)->List[int]:
                 ss = s.split('.')
                 assert len(ss)==3, f'编译器版本格式有误：{s}'
                 return [int(si) for si in ss]
 
+            # 寻找是否已经存在满足要求的编译器版本
             versions.insert(0,cur_version)
             demands = digit(line[1:])
             for item in versions:
@@ -60,14 +63,14 @@ def change_solc_version(sol_path:str):
             return    
 
     # 切换版本
-    if  obj_version not in versions or obj_version == '':
+    if  obj_version not in versions:
         print("未找到合适的solidity版本，需要先安装")
         if os.name == 'nt':
             subprocess.call(f'solc-select install {obj_version}')
-            change_solc_version(sol_path)
+            subprocess.call(f'solc-select use {obj_version}')
         elif os.name == 'posix':
             subprocess.call(f'solc-select install {obj_version}', shell=True)
-            change_solc_version(sol_path)
+            subprocess.call(f'solc-select use {obj_version}', shell=True)
         else:
             assert False, f'未知的操作系统类型 {os.name}'
             sys.exit()
@@ -78,4 +81,4 @@ def change_solc_version(sol_path:str):
             subprocess.call(f'solc-select use {obj_version}', shell=True)
         else:
             assert False, f'未知的操作系统类型 {os.name}'
-        
+    

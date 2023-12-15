@@ -1,5 +1,5 @@
 import json
-import os
+import os, time
 import sys
 sys.path.append('.')
 from core.utils.url import Chain
@@ -27,8 +27,11 @@ if __name__ == "__main__":
     json_file = f'{code_dir}/{JSONFILE}'
     if not os.path.exists(json_file):
         content = download_config[CONTENT]
-        for address in content.values():
+        for name, address in content.items():
+            print(f"下载 {name} {address}")
             source_code = SourceCode(chain,address,code_dir)
             source_code.download(gene_conf_file=False)
+            # etherscan api 频率限制 5s 一次请求
+            time.sleep(5)
         with open(json_file,'w') as fp:
             json.dump(download_config, fp)
