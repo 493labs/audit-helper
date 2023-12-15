@@ -2,7 +2,7 @@ from typing import List
 import z3
 
 def check_constraints(constraints:List[z3.ExprRef])->bool:
-    s = z3.Solver()
+    s = z3.Optimize()
     for constraint in constraints:
         s.add(constraint)
     return z3.sat == s.check()

@@ -94,7 +94,8 @@ def entry():
     # param1 = z3.BitVec('call0.amount0Out',256)
     # param2 = z3.BitVec('call0.amount1Out',256)
     param1 = z3.Int('call0.amount0Out')
-    param2 = z3.Int('call0.amount1Out')
+    # param2 = z3.Int('call0.amount1Out')
+    param2 = 0
     param3 = IUniswapV2Callee
     param4 = SolBytes()
     call = Call(

@@ -54,7 +54,7 @@ class ExecVM:
 
         elif isinstance(ir, operations.SolidityCall):
             if ir.function.name.startswith('require'):
-                mstate.constraints.append(mstate.get_z3_var(ir.arguments[0]))
+                mstate.add_constraint(mstate.get_z3_var(ir.arguments[0]))
             else:
                 assert False, '未处理的 solidity call'
 
@@ -91,13 +91,7 @@ class ExecVM:
                     mstate.set_z3_var(ir.lvalue, z3_var)
                     return 
                 if ir.function.name == "_update":
-                    reserve0 = mstate.wstate.get_storage(1, "reserve0")
-                    reserve1 = mstate.wstate.get_storage(1, "reserve1")
-                    balance_of_token0 =  mstate.wstate.get_storage(2, "_balances.1")
-                    balance_of_token1 =  mstate.wstate.get_storage(3, "_balances.1")
-                    mstate.constraints.append(balance_of_token0*balance_of_token1 < reserve0*reserve1)
-                    model = mstate.solve_constraints()
-                    assert False
+                    return
                     
                 call = copy(mstate.call_stack[-1])
                 call.call_type = CallType.Internal
@@ -149,6 +143,9 @@ class ExecVM:
             # 在node层进行处理
             pass
 
+        elif isinstance(ir, operations.EventCall):
+            pass
+
         else:
             assert False, '未处理的ir'
 
@@ -158,9 +155,9 @@ class ExecVM:
             if isinstance(ir, operations.Condition):
                 z3_cond = mstate.get_z3_var(ir.value)
                 if if_true:
-                    mstate.constraints.append(z3_cond)
+                    mstate.add_constraint(z3_cond)
                 else:
-                    mstate.constraints.append(z3.Not(z3_cond))
+                    mstate.add_constraint(z3.Not(z3_cond))
 
                 if mstate.check_constraints():
                     if is_loop and not if_true:
@@ -218,4 +215,16 @@ class ExecVM:
         mstate = MachineState(wstate, call_stack=[call])
         self.mstate_check_constraints[mstate] = True
         self.exec_call(mstate)
+
+        for mstate, end_normally in self.mstate_check_constraints.items():
+            if end_normally:
+                reserve0 = mstate.wstate.get_storage(1, "reserve0")
+                reserve1 = mstate.wstate.get_storage(1, "reserve1")
+                balance_of_token0 =  mstate.wstate.get_storage(2, "_balances.1")
+                balance_of_token1 =  mstate.wstate.get_storage(3, "_balances.1")
+                mstate.add_constraint(balance_of_token0*balance_of_token1 < reserve0*reserve1)
+                result = mstate.check_constraints()
+                if result:
+                    print("该基于uniswap v2的合约的swap方法存在K值交易后变小的情况")
+                    break
         

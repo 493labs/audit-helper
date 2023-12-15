@@ -12,7 +12,7 @@ from slither.slithir.variables import Constant, TemporaryVariable, ReferenceVari
 
 import z3
 
-from ..z3_helper import check_constraints, solve_constraints
+from ..z3_helper import check_constraints, solve_constraints, simplify
 from ..types import SolAddress, SolUint
 from .world_state import WorldState
 
@@ -93,7 +93,7 @@ class Return:
 class MachineState(LoopState):
     wstate: WorldState
     __symbolic_vars: Mapping[str, z3.SortRef]
-    constraints: List[z3.ExprRef]
+    __constraints: List[z3.ExprRef]
 
     call_stack: List[Call]
     exec_path: List[Node]
@@ -103,7 +103,7 @@ class MachineState(LoopState):
         super().__init__(loop_stack, loop_reach_count)
         self.wstate = wstate
         self.__symbolic_vars = symbolic_vars
-        self.constraints = constraints
+        self.__constraints = constraints
         self.call_stack = call_stack
         self.exec_path = exec_path
 
@@ -112,7 +112,7 @@ class MachineState(LoopState):
         mstate = MachineState(
             deepcopy(self.wstate),
             copy(self.__symbolic_vars), 
-            copy(self.constraints), 
+            copy(self.__constraints), 
             copy(self.call_stack),
             copy(self.exec_path),
             super().copy_loop_stack(),
@@ -170,12 +170,18 @@ class MachineState(LoopState):
         else:
             self.__symbolic_vars[self.get_key(ir_v)] = z3_var
 
+    def add_constraint(self,constraint:z3.ExprRef):
+        self.__constraints.append(simplify(constraint))
+
+    def get_constraints(self):
+        return self.__constraints
+
     def check_constraints(self):
-        constraints = self.wstate.get_constraints() + self.constraints
+        constraints = self.wstate.get_constraints() + self.__constraints
         return check_constraints(constraints)
     
     def solve_constraints(self):
-        constraints = self.wstate.get_constraints() + self.constraints
+        constraints = self.wstate.get_constraints() + self.__constraints
         return solve_constraints(constraints)
 
 
