@@ -3,6 +3,7 @@ from copy import deepcopy, copy
 from slither.core.declarations import Contract
 from slither.core.variables.state_variable import StateVariable
 import slither.core.solidity_types as solidity_types
+from slither.core.cfg.node import NodeType
 
 from core.symbolic.types import SolAddress
 from core.symbolic.z3_helper import simplify
@@ -45,6 +46,9 @@ class WorldState:
     def get_storage(self, address:SolAddress, ir_v:Union[str, StateVariable], key_additions:List=None):
         key = self.get_key(address, ir_v, key_additions)
         if key not in self.__storage:
+            if ir_v.initialized:
+                v = ir_v.node_initialization.irs[-1].rvalue
+                return v
             return 0
         return self.__storage[key]
     

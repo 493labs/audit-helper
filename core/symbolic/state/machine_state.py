@@ -63,6 +63,7 @@ class CallType(Enum):
     Entry = 1
     Internal = 2
     External = 3
+    Modifier = 4
 
 class Call:
     target: SolAddress
@@ -72,6 +73,9 @@ class Call:
     msg_sender:SolAddress
     msg_value:SolUint
     tx_origin:SolAddress 
+    place_holder_point:"Call" # 用于 Modifier 场景
+    master_call:"Call" # 用于 Modifier 场景
+    returns:any
 
     def __init__(self, call_type, target, function_signature, params, msg_sender, msg_value, tx_origin):
         super().__init__()
@@ -83,12 +87,6 @@ class Call:
         self.msg_value = msg_value
         self.tx_origin = tx_origin
 
-class Return:
-    the_call: Call
-    vals: any
-    def __init__(self, the_call, vals) -> None:
-        self.the_call = the_call
-        self.vals = vals
 
 class MachineState(LoopState):
     wstate: WorldState
@@ -97,7 +95,7 @@ class MachineState(LoopState):
 
     call_stack: List[Call]
     exec_path: List[Node]
-    last_return: Return
+    last_call: Call
     
     def __init__(self, wstate, symbolic_vars={}, constraints=[], call_stack = [], exec_path = [], loop_stack = [], loop_reach_count = {}):
         super().__init__(loop_stack, loop_reach_count)
@@ -166,9 +164,21 @@ class MachineState(LoopState):
 
     def set_z3_var(self, ir_v, z3_var):
         if isinstance(ir_v, StateVariable):
-            self.wstate.accounts[self.call_stack[-1].target].set_storage(ir_v,z3_var)
+            self.wstate.set_storage(self.call_stack[-1].target, ir_v, z3_var)
         else:
             self.__symbolic_vars[self.get_key(ir_v)] = z3_var
+    
+    def get_z3_var_for_modify(self, ir_v, call:Call):
+        assert isinstance(ir_v, LocalVariable)
+        domain = self.get_domain(ir_v, call)
+        key  = self.get_key(ir_v, domain)
+        return self.__symbolic_vars[key]
+
+    def set_z3_var_to_call_input(self, ir_v, z3_var, call:Call):
+        assert isinstance(ir_v, LocalVariable)
+        domain = self.get_domain(ir_v, call)
+        key  = self.get_key(ir_v, domain)
+        self.__symbolic_vars[key] = z3_var
 
     def add_constraint(self,constraint:z3.ExprRef):
         self.__constraints.append(simplify(constraint))
@@ -185,15 +195,15 @@ class MachineState(LoopState):
         return solve_constraints(constraints)
 
 
-    def set_last_return(self, ir_v):
-        self.last_return = Return(self.call_stack[-1].function_signature, ir_v)
+    def handle_return_ir(self, ir_v):
+        self.call_stack[-1].returns = ir_v
 
-    def call_return(self):
-        f = self.get_cur_function()
+    def handle_return(self):
         if self.exec_path[-1].type != NodeType.RETURN:
             # 方法没有显式的Return时的返回值处理
-            self.set_last_return(f.returns)
-        self.call_stack.pop()
+            f = self.get_cur_function()
+            self.call_stack[-1].returns = f.returns
+        self.last_call = self.call_stack.pop()
 
     def get_cur_function(self):
         c = self.wstate.get_contract(self.call_stack[-1].target)

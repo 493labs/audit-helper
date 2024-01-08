@@ -8,7 +8,7 @@ from slither.core.variables.local_variable import LocalVariable
 from slither.core.variables.variable import Variable
 import slither.slithir.operations as operations
 
-from .state.machine_state import MachineState, LOOP_MAX, CallType, Call, Return
+from .state.machine_state import MachineState, LOOP_MAX, CallType, Call
 from .state.world_state import WorldState
 
 import z3
@@ -39,6 +39,8 @@ class ExecVM:
                 lvalue_z3 = z3.Or(left_value_z3, right_value_z3)
             elif ir.type == operations.BinaryType.ANDAND:
                 lvalue_z3 = z3.And(left_value_z3, right_value_z3)
+            elif ir.type == operations.BinaryType.EQUAL:
+                lvalue_z3 = left_value_z3 == right_value_z3
             elif ir.type == operations.BinaryType.NOT_EQUAL:
                 lvalue_z3 = left_value_z3 != right_value_z3
             else:
@@ -61,7 +63,7 @@ class ExecVM:
         elif isinstance(ir, operations.InternalCall):
             if isinstance(ir.function, Function):
                 if ir.is_modifier_call:
-                    # 暂未考虑 modifier 的情况
+                    # modifier 应该在进入方法前处理，相当于在modifier中调用方法
                     return
                 if ir.function.name == "_safeTransfer":
                     token_addr = mstate.get_z3_var(ir.arguments[0])
@@ -102,12 +104,14 @@ class ExecVM:
                 for i in range(ir.nbr_arguments):
                     call.params.append(mstate.get_z3_var(ir.arguments[i]))
 
-                mstate.call_stack.append(call)
                 print("——————开始内部调用——————")
-                self.exec_call(mstate)
+                self.exec_call(mstate, call)
                 print("——————结束内部调用——————")
 
-                mstate.set_z3_var(ir.lvalue, mstate.last_return)
+                if mstate.last_call.call_type == CallType.Modifier:
+                    mstate.set_z3_var(ir.lvalue, mstate.last_call.master_call.returns)
+                else:
+                    mstate.set_z3_var(ir.lvalue, mstate.last_call.returns)
             else:
                 assert False, '未处理的 internal call'
 
@@ -131,11 +135,10 @@ class ExecVM:
             # pass
 
         elif isinstance(ir, operations.Return):
-            mstate.set_last_return(ir.values)
-            mstate.call_stack.pop()
+            mstate.handle_return_ir(ir.values)
 
         elif isinstance(ir, operations.Unpack):
-            last_return:Return = mstate.get_z3_var(ir.tuple)
+            last_return = mstate.get_z3_var(ir.tuple)
             z3_v = mstate.get_z3_var(last_return.vals[ir.index]) 
             mstate.set_z3_var(ir.lvalue, z3_v)
 
@@ -170,9 +173,13 @@ class ExecVM:
     def travel(self, mstate:MachineState, node:Node):
         mstate.exec_path.append(node)
         print(node)
-        for ir in node.irs:
-            print(f"\t{ir}")
-            self.exec_ir(mstate, ir)
+        if node.type == NodeType.PLACEHOLDER:
+            modify_call = mstate.call_stack[-1]
+            self.exec_call(mstate, modify_call.place_holder_point)
+        else:
+            for ir in node.irs:
+                print(f"\t{ir}")
+                self.exec_ir(mstate, ir)
         
         if node.type == NodeType.IF:
             mstate_if_false = deepcopy(mstate)
@@ -199,22 +206,62 @@ class ExecVM:
             if node.sons:
                 self.travel(mstate, node.sons[0])
             else:
-                mstate.call_return()
+                mstate.handle_return()
 
-    def exec_call(self, mstate:MachineState):
-        assert mstate.call_stack
-        cur_function = mstate.get_cur_function()
-        params = mstate.call_stack[-1].params
-        if cur_function.parameters:
-            assert len(params) == len(cur_function.parameters)
-            for i in range(len(params)):
-                mstate.set_z3_var(cur_function.parameters[i],params[i])
-        self.travel(mstate, cur_function.entry_point)
+    def set_call_params(self, mstate:MachineState, call:Call, f:Function):
+        if f.parameters:
+            # 把 call.params 保存到 mstate 中
+            assert len(call.params) == len(f.parameters)
+            for i in range(len(call.params)):
+                mstate.set_z3_var_to_call_input(f.parameters[i],call.params[i],call)
+
+    def exec_call(self, mstate:MachineState, call:Call):
+        # assert mstate.call_stack
+        cur_function = mstate.wstate.get_contract(call.target).get_function_from_signature(call.function_signature)
+        assert cur_function
+        if mstate.call_stack and call.call_type == CallType.Internal and mstate.call_stack[-1].call_type == CallType.Modifier:
+            # 通过place_holder进入function时
+            pass
+        else:
+            self.set_call_params(mstate, call, cur_function)
+
+        modifier_count = len(cur_function.modifiers)
+        place_holder_point = call
+        for i in range(modifier_count-1,-1, -1):
+            modify = cur_function.modifiers[i]
+            name, parameters, _ = modify.signature
+            function_signature = name + "(" + ",".join(parameters) + ")"
+
+            # 把 master call 中的参数保存到 modify 的 call.params 中
+            params = [mstate.get_z3_var_for_modify(parameter) for parameter in modify.parameters]
+
+            modify_call = Call(
+                CallType.Modifier,
+                call.target,
+                function_signature,
+                params,
+                call.msg_sender,
+                call.msg_value,
+                call.tx_origin
+            )
+            modify_call.master_call = call
+            modify_call.place_holder_point = place_holder_point
+            place_holder_point = modify_call
+
+        if modifier_count > 0:
+            # 第一个modify
+            mstate.call_stack.append(modify_call)
+            self.set_call_params(mstate, modify_call, modify)
+            self.travel(mstate, modify.entry_point)
+        else:
+            mstate.call_stack.append(call)
+            self.travel(mstate, cur_function.entry_point)
+        
 
     def start(self, wstate:WorldState, call: Call):
-        mstate = MachineState(wstate, call_stack=[call])
+        mstate = MachineState(wstate)
         self.mstate_check_constraints[mstate] = True
-        self.exec_call(mstate)
+        self.exec_call(mstate, call)
 
         for mstate, end_normally in self.mstate_check_constraints.items():
             if end_normally:
