@@ -46,9 +46,15 @@ class WorldState:
     def get_storage(self, address:SolAddress, ir_v:Union[str, StateVariable], key_additions:List=None):
         key = self.get_key(address, ir_v, key_additions)
         if key not in self.__storage:
-            if ir_v.initialized:
+            if isinstance(ir_v, StateVariable) and ir_v.initialized:
                 v = ir_v.node_initialization.irs[-1].rvalue
                 return v
+            return 0
+        return self.__storage[key]
+    
+    def get_storage_by_key(self, key:str):
+        assert isinstance(key, str)
+        if key not in self.__storage:
             return 0
         return self.__storage[key]
     

@@ -6,10 +6,14 @@ from slither.core.declarations import Contract, Function
 from slither.core.cfg.node import Node, NodeType
 from slither.core.variables.local_variable import LocalVariable
 from slither.core.variables.variable import Variable
+from slither.core.variables.state_variable import StateVariable
 import slither.slithir.operations as operations
+from slither.slithir.variables import ReferenceVariable
+
 
 from .state.machine_state import MachineState, LOOP_MAX, CallType, Call
 from .state.world_state import WorldState
+from .utils import get_function_signature
 
 import z3
 
@@ -51,8 +55,9 @@ class ExecVM:
             v = mstate.get_z3_var(ir.rvalue)
             mstate.set_z3_var(ir.lvalue, v)
 
-        # elif isinstance(ir, operations.TypeConversion):
-        #     pass
+        elif isinstance(ir, operations.TypeConversion):
+            z3_v = mstate.get_z3_var(ir.variable)
+            mstate.set_z3_var(ir.lvalue, z3_v)
 
         elif isinstance(ir, operations.SolidityCall):
             if ir.function.name.startswith('require'):
@@ -63,7 +68,7 @@ class ExecVM:
         elif isinstance(ir, operations.InternalCall):
             if isinstance(ir.function, Function):
                 if ir.is_modifier_call:
-                    # modifier 应该在进入方法前处理，相当于在modifier中调用方法
+                    # modifier 应该在进入方法前处理，相当于在modifier中调用方法，在exec_call和travel方法中进行处理
                     return
                 if ir.function.name == "_safeTransfer":
                     token_addr = mstate.get_z3_var(ir.arguments[0])
@@ -75,37 +80,25 @@ class ExecVM:
                     cur_amount_of_to = mstate.wstate.get_storage(token_addr, f"_balances.{to}")
                     mstate.wstate.set_storage(token_addr, f"_balances.{from_}", cur_amount_of_from - amount)
                     mstate.wstate.set_storage(token_addr, f"_balances.{to}", cur_amount_of_to + amount)
-                    # call = copy(mstate.call_stack[-1])
-                    # call.call_type = CallType.External
-                    # call.target = mstate.get_z3_var(ir.arguments[0])
-                    # call.function_signature = "transfer(address,uint256)"
-                    # call.params = [mstate.get_z3_var(ir.arguments[1]), mstate.get_z3_var(ir.arguments[2])]
-                    # call.msg_sender = mstate.call_stack[-1].target
-                    # call.msg_value = 0
-                    # mstate.call_stack.append(call)
-                    # print("——————开始外部调用——————")
-                    # self.exec_call(mstate)
-                    # print("——————结束外部调用——————")
                     return
-                if ir.function.name == "self_balance_of":
-                    token_addr = mstate.get_z3_var(ir.arguments[0])
-                    z3_var = mstate.wstate.get_storage(token_addr, f"_balances.{mstate.call_stack[-1].target}")
-                    mstate.set_z3_var(ir.lvalue, z3_var)
-                    return 
                 if ir.function.name == "_update":
                     return
                     
-                call = copy(mstate.call_stack[-1])
-                call.call_type = CallType.Internal
-
-                name, parameters, _ = ir.function.signature
-                call.function_signature = name + "(" + ",".join(parameters) + ")"
-                call.params = []
-                for i in range(ir.nbr_arguments):
-                    call.params.append(mstate.get_z3_var(ir.arguments[i]))
+                function_signature = get_function_signature(ir.function)
+                params = [mstate.get_z3_var(arguments) for arguments in ir.arguments]
+                cur_call = mstate.call_stack[-1]
+                next_call = Call(
+                    CallType.Internal,
+                    cur_call.target,
+                    function_signature,
+                    params,
+                    cur_call.msg_sender,
+                    cur_call.msg_value,
+                    cur_call.tx_origin
+                )
 
                 print("——————开始内部调用——————")
-                self.exec_call(mstate, call)
+                self.exec_call(mstate, next_call)
                 print("——————结束内部调用——————")
 
                 if mstate.last_call.call_type == CallType.Modifier:
@@ -129,18 +122,51 @@ class ExecVM:
             else:
                 assert False,"未支持的库调用"
             
-        # elif isinstance(ir, operations.HighLevelCall):
-            # 与InternalCall的情况其实类似
+        elif isinstance(ir, operations.HighLevelCall):
+            cur_call = mstate.call_stack[-1]
+            next_call = Call(
+                CallType.External,
+                target= mstate.get_z3_var(ir.destination),
+                function_signature= get_function_signature(ir.function),
+                params= [mstate.get_z3_var(arguments) for arguments in ir.arguments],
+                msg_sender= cur_call.target,
+                msg_value= cur_call.msg_value,
+                tx_origin= cur_call.tx_origin
+            )
 
-            # pass
+            print("——————开始外部调用——————")
+            self.exec_call(mstate, next_call)
+            print("——————结束外部调用——————")
+            mstate.set_z3_var(ir.lvalue, mstate.last_call.returns)
 
         elif isinstance(ir, operations.Return):
             mstate.handle_return_ir(ir.values)
 
         elif isinstance(ir, operations.Unpack):
             last_return = mstate.get_z3_var(ir.tuple)
-            z3_v = mstate.get_z3_var(last_return.vals[ir.index]) 
+            z3_v = mstate.get_z3_var(last_return[ir.index]) 
             mstate.set_z3_var(ir.lvalue, z3_v)
+
+        elif isinstance(ir, operations.Index):
+            if isinstance(ir.variable_left, StateVariable):
+                addr = mstate.call_stack[-1].target
+                right_value_z3 = mstate.get_z3_var(ir.variable_right)
+                key = mstate.wstate.get_key(addr, ir.variable_left, [right_value_z3])
+                
+                ir.lvalue.tag = key
+                mstate.set_z3_var(ir.lvalue, mstate.wstate.get_storage_by_key(key))
+                pass
+            
+            elif isinstance(ir.variable_left, ReferenceVariable):
+                key = f"{ir.variable_left.tag}." + mstate.get_z3_var(ir.variable_right)
+                ir.lvalue.tag = key
+                if key.startswith('wstate'):
+                    mstate.set_z3_var(ir.lvalue, mstate.wstate.get_storage_by_key(key))
+                else:
+                    mstate.set_z3_var(ir.lvalue, mstate.get_z3_var_by_key(key))
+                pass
+            else:
+                assert False, "未处理的Index类型"
 
         elif isinstance(ir, operations.Condition):
             # 在node层进行处理
@@ -198,9 +224,9 @@ class ExecVM:
                 self.add_if_cond_and_travel(mstate, node, True, is_loop=True)
             self.add_if_cond_and_travel(mstate_if_false, node, False, is_loop=True)
 
-        elif node.type == NodeType.RETURN:
-            # call_return操作在ir中完成
-            pass
+        # elif node.type == NodeType.RETURN:
+        #     # call_return操作在ir中完成，然后在else中完成后续操作
+        #     pass
 
         else:
             if node.sons:
@@ -219,43 +245,43 @@ class ExecVM:
         # assert mstate.call_stack
         cur_function = mstate.wstate.get_contract(call.target).get_function_from_signature(call.function_signature)
         assert cur_function
-        if mstate.call_stack and call.call_type == CallType.Internal and mstate.call_stack[-1].call_type == CallType.Modifier:
+        if mstate.call_stack and call.call_type != CallType.Modifier and mstate.call_stack[-1].call_type == CallType.Modifier:
             # 通过place_holder进入function时
-            pass
+            mstate.call_stack.append(call)
+            self.travel(mstate, cur_function.entry_point)
         else:
             self.set_call_params(mstate, call, cur_function)
 
-        modifier_count = len(cur_function.modifiers)
-        place_holder_point = call
-        for i in range(modifier_count-1,-1, -1):
-            modify = cur_function.modifiers[i]
-            name, parameters, _ = modify.signature
-            function_signature = name + "(" + ",".join(parameters) + ")"
+            modifier_count = len(cur_function.modifiers)
+            place_holder_point = call
+            for i in range(modifier_count-1,-1, -1):
+                modify = cur_function.modifiers[i]
+                function_signature = get_function_signature(modify)
 
-            # 把 master call 中的参数保存到 modify 的 call.params 中
-            params = [mstate.get_z3_var_for_modify(parameter) for parameter in modify.parameters]
+                # 把 master call 中的参数保存到 modify 的 call.params 中
+                params = [mstate.get_z3_var_for_modify(parameter) for parameter in modify.parameters]
 
-            modify_call = Call(
-                CallType.Modifier,
-                call.target,
-                function_signature,
-                params,
-                call.msg_sender,
-                call.msg_value,
-                call.tx_origin
-            )
-            modify_call.master_call = call
-            modify_call.place_holder_point = place_holder_point
-            place_holder_point = modify_call
+                modify_call = Call(
+                    CallType.Modifier,
+                    call.target,
+                    function_signature,
+                    params,
+                    call.msg_sender,
+                    call.msg_value,
+                    call.tx_origin
+                )
+                modify_call.master_call = call
+                modify_call.place_holder_point = place_holder_point
+                place_holder_point = modify_call
 
-        if modifier_count > 0:
-            # 第一个modify
-            mstate.call_stack.append(modify_call)
-            self.set_call_params(mstate, modify_call, modify)
-            self.travel(mstate, modify.entry_point)
-        else:
-            mstate.call_stack.append(call)
-            self.travel(mstate, cur_function.entry_point)
+            if modifier_count > 0:
+                # 第一个modify
+                mstate.call_stack.append(modify_call)
+                self.set_call_params(mstate, modify_call, modify)
+                self.travel(mstate, modify.entry_point)
+            else:
+                mstate.call_stack.append(call)
+                self.travel(mstate, cur_function.entry_point)
         
 
     def start(self, wstate:WorldState, call: Call):

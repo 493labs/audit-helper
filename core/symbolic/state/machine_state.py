@@ -2,7 +2,7 @@ from typing import Mapping, List, Union, Tuple
 from copy import copy, deepcopy
 from enum import Enum
 
-from slither.core.declarations import Contract, Function, SolidityVariableComposed
+from slither.core.declarations import Contract, Function, SolidityVariable, SolidityVariableComposed
 from slither.core.cfg.node import Node, NodeType
 from slither.core.variables.variable import Variable
 from slither.core.variables.state_variable import StateVariable
@@ -141,7 +141,7 @@ class MachineState(LoopState):
         elif isinstance(ir_v, StateVariable):
             return self.wstate.get_storage(self.call_stack[-1].target, ir_v)
         
-        elif isinstance(ir_v, SolidityVariableComposed):
+        elif isinstance(ir_v, (SolidityVariable, SolidityVariableComposed)):
             # 由执行环境提供
             if ir_v.name == "msg.sender":
                 return self.call_stack[-1].msg_sender
@@ -149,18 +149,24 @@ class MachineState(LoopState):
                 return self.call_stack[-1].msg_value
             elif ir_v.name == "tx.origin":
                 return self.call_stack[-1].tx_origin
+            elif ir_v.name == "this":
+                return self.call_stack[-1].target
             else:
                 assert False, '未支持的类型'
 
         elif isinstance(ir_v, LocalVariable):
             return self.__symbolic_vars[self.get_key(ir_v)]
         
-        elif isinstance(ir_v, Union[TemporaryVariable, ReferenceVariable, TupleVariable]):
+        elif isinstance(ir_v, (TemporaryVariable, ReferenceVariable, TupleVariable)):
             # 由其他类型在operation中生成
             return self.__symbolic_vars[self.get_key(ir_v)]
 
         else:
             assert False, '未支持的类型'
+
+    def get_z3_var_by_key(self, key:str):
+        assert isinstance(key, str)
+        return self.__symbolic_vars[key]
 
     def set_z3_var(self, ir_v, z3_var):
         if isinstance(ir_v, StateVariable):
@@ -203,6 +209,12 @@ class MachineState(LoopState):
             # 方法没有显式的Return时的返回值处理
             f = self.get_cur_function()
             self.call_stack[-1].returns = f.returns
+
+        if len(self.call_stack[-1].returns) == 1:
+            # returns长度大于1时，相应的会有unpack操作，unpack中会有get_z3_var操作
+            # 等于1时，在这里get_z3_var操作
+            self.call_stack[-1].returns = self.get_z3_var(self.call_stack[-1].returns[0])
+
         self.last_call = self.call_stack.pop()
 
     def get_cur_function(self):
